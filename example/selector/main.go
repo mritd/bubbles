@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/mritd/bubbles/selector"
@@ -10,19 +11,23 @@ import (
 
 func main() {
 	m := &selector.Model{
-		Data: []string{
-			"1 asdsdgsfgdsgsdfsd",
-			"2 sadsdgdfghdfhfd",
-			"3 fgdfghdffgdgfdsgsdf",
-			"4 fgfghklfghkfnhgf",
-			"5 ghfgkhjgkksdfdsfs",
-			"6 fgmhfkmhfghmjhkhjk",
-			"7 fhlfmhkmgfkjhfg",
-			"8 kfgmhlfmjhgmhm",
-			"9 lknkjas7yfgndndgldnflbah",
+		Data: []interface{}{
+			"asdsdgsfgdsgsdfsd",
+			"ijhlgmhldfgdg",
+			"fgdfghdffgdgfdsgsdf",
+			"opsdngdfgfhgkfgggdfg",
+			"ghfgkhjgkksdfdsfs",
+			"fgmhfkmhfghmjhkhjk",
+			"chlfmhkmgfkjhfg",
+			"kfgmhlfmjhgmhm",
+			"lknkjas7yfgndndgldnflbah",
 		},
 		PerPage: 4,
-		Header:  selector.DefaultHeader + "\nSelect Login Server:",
+		HeaderFunc: func(m selector.Model, prtIndex, drtIndex int) string {
+			return fmt.Sprintf(selector.DefaultHeader+"\nCurrent Data index: %d\nCurrent Selected: %v", m.Index(), m.Selected())
+		},
+		SelectedFunc:   selector.DefaultSelectedFuncWithIndex("[%d]"),
+		UnSelectedFunc: selector.DefaultUnSelectedFuncWithIndex(" %d."),
 	}
 
 	p := tea.NewProgram(m)
@@ -31,8 +36,8 @@ func main() {
 		log.Fatal(err)
 	}
 	if !m.Canceled() {
-		log.Printf("selected index => %d\n", m.Selected())
-		log.Printf("selected vaule => %s\n", m.Data[m.Selected()])
+		log.Printf("selected index => %d\n", m.Index())
+		log.Printf("selected vaule => %s\n", m.Selected())
 	} else {
 		log.Println("user canceled...")
 	}

@@ -1,4 +1,4 @@
-package selector
+package tplselector
 
 import (
 	"fmt"
@@ -22,57 +22,57 @@ const (
 var term = termenv.ColorProfile()
 
 type Model struct {
-	Header          string
+	HeaderFunc      func(m Model, prtIndex, drtIndex int) string
 	HeaderColor     string
 	Cursor          string
 	CursorColor     string
+	SelectedFunc    func(m Model, prtIndex, drtIndex int) string
 	SelectedColor   string
+	UnSelectedFunc  func(m Model, prtIndex, drtIndex int) string
 	UnSelectedColor string
-	Footer          string
+	FooterFunc      func(m Model, prtIndex, drtIndex int) string
 	FooterColor     string
 	FooterShowIndex bool
 	PerPage         int
-	Data            []string
+	Data            []interface{}
+	pageData        []interface{}
 	init            bool
+	canceled        bool
 	index           int
 	pageIndex       int
-	pageData        []string
 }
 
-func (m *Model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m *Model) View() string {
-	header := fontColor(m.Header, m.HeaderColor)
+func (m Model) View() string {
 	cursor := fontColor(m.Cursor, m.CursorColor)
 
-	var footerTpl string
-	if m.FooterShowIndex {
-		footerTpl = fmt.Sprintf(m.Footer, m.index+1, len(m.Data))
-	} else {
-		footerTpl = m.Footer
-	}
-	footer := fontColor(footerTpl, m.FooterColor)
-
-	var data string
-	for i, field := range m.pageData {
+	var header, data, footer string
+	for i := range m.pageData {
 		var cursorPrefix string
 		var dataLine string
 		if i == m.pageIndex {
 			cursorPrefix = cursor + " "
-			dataLine = fontColor(field, m.SelectedColor) + "\n"
+			dataLine = fontColor(m.SelectedFunc(m, i, i+m.index-m.pageIndex), m.SelectedColor) + "\n"
 		} else {
 			cursorPrefix = genSpaces(runewidth.StringWidth(m.Cursor) + 1)
-			dataLine = fontColor(field, m.UnSelectedColor) + "\n"
+			dataLine = fontColor(m.UnSelectedFunc(m, i, i+m.index-m.pageIndex), m.UnSelectedColor) + "\n"
 		}
 		data += cursorPrefix + dataLine
+		header = fontColor(m.HeaderFunc(m, i, i+m.index-m.pageIndex), m.HeaderColor)
+		if m.FooterShowIndex {
+			footer = fontColor(fmt.Sprintf(m.FooterFunc(m, i, i+m.index-m.pageIndex), m.index+1, len(m.Data)), m.FooterColor)
+		} else {
+			footer = fontColor(m.FooterFunc(m, i, i+m.index-m.pageIndex), m.FooterColor)
+		}
 	}
 
 	return fmt.Sprintf("%s\n\n%s\n%s\n", header, data, footer)
 }
 
-func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.init {
 		m.initData()
 	}
@@ -80,7 +80,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
-			m.index = -1
+			m.canceled = true
 			return m, tea.Quit
 		case "enter":
 			return m, tea.Quit
@@ -95,12 +95,28 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *Model) Selected() int {
+func (m *Model) Index() int {
 	return m.index
 }
 
+func (m *Model) PageIndex() int {
+	return m.pageIndex
+}
+
+func (m *Model) PageData() []interface{} {
+	return m.pageData
+}
+
+func (m *Model) Selected() interface{} {
+	return m.Data[m.index]
+}
+
+func (m *Model) PageSelected() interface{} {
+	return m.pageData[m.pageIndex]
+}
+
 func (m *Model) Canceled() bool {
-	return m.index == -1
+	return m.canceled
 }
 
 func (m *Model) MoveUp() {
@@ -123,8 +139,8 @@ func (m *Model) MoveDown() {
 
 func (m *Model) initData() {
 	m.pageData = m.Data[:m.PerPage]
-	if m.Header == "" {
-		m.Header = DefaultHeader
+	if m.HeaderFunc == nil {
+		m.HeaderFunc = func(_ Model, _, _ int) string { return DefaultHeader }
 	}
 	if m.HeaderColor == "" {
 		m.HeaderColor = defaultHeaderColor
@@ -135,14 +151,20 @@ func (m *Model) initData() {
 	if m.CursorColor == "" {
 		m.CursorColor = defaultCursorColor
 	}
+	if m.SelectedFunc == nil {
+		m.SelectedFunc = func(m Model, prtIndex, drtIndex int) string { return fmt.Sprint(m.pageData[prtIndex]) }
+	}
 	if m.SelectedColor == "" {
 		m.SelectedColor = defaultSelectedColor
+	}
+	if m.UnSelectedFunc == nil {
+		m.UnSelectedFunc = func(m Model, prtIndex, drtIndex int) string { return fmt.Sprint(m.pageData[prtIndex]) }
 	}
 	if m.UnSelectedColor == "" {
 		m.UnSelectedColor = defaultUnSelectedColor
 	}
-	if m.Footer == "" {
-		m.Footer = DefaultFooter
+	if m.FooterFunc == nil {
+		m.FooterFunc = func(_ Model, _, _ int) string { return DefaultFooter }
 		m.FooterShowIndex = true
 	}
 	if m.FooterColor == "" {
