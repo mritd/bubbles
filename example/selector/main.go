@@ -9,25 +9,56 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type CommitType string
+
+const (
+	FEAT     CommitType = "feat"
+	FIX      CommitType = "fix"
+	DOCS     CommitType = "docs"
+	STYLE    CommitType = "style"
+	REFACTOR CommitType = "refactor"
+	TEST     CommitType = "test"
+	CHORE    CommitType = "chore"
+	PERF     CommitType = "perf"
+	EXIT     CommitType = "exit"
+)
+
+type TypeMessage struct {
+	Type          CommitType
+	ZHDescription string
+	ENDescription string
+}
+
 func main() {
 	m := &selector.Model{
 		Data: []interface{}{
-			"asdsdgsfgdsgsdfsd",
-			"ijhlgmhldfgdg",
-			"fgdfghdffgdgfdsgsdf",
-			"opsdngdfgfhgkfgggdfg",
-			"ghfgkhjgkksdfdsfs",
-			"fgmhfkmhfghmjhkhjk",
-			"chlfmhkmgfkjhfg",
-			"kfgmhlfmjhgmhm",
-			"lknkjas7yfgndndgldnflbah",
+			TypeMessage{Type: FEAT, ZHDescription: "新功能", ENDescription: "Introducing new features"},
+			TypeMessage{Type: FIX, ZHDescription: "修复 Bug", ENDescription: "Bug fix"},
+			TypeMessage{Type: DOCS, ZHDescription: "添加文档", ENDescription: "Writing docs"},
+			TypeMessage{Type: STYLE, ZHDescription: "调整格式", ENDescription: "Improving structure/format of the code"},
+			TypeMessage{Type: REFACTOR, ZHDescription: "重构代码", ENDescription: "Refactoring code"},
+			TypeMessage{Type: TEST, ZHDescription: "增加测试", ENDescription: "When adding missing tests"},
+			TypeMessage{Type: CHORE, ZHDescription: "CI/CD 变动", ENDescription: "Changing CI/CD"},
+			TypeMessage{Type: PERF, ZHDescription: "性能优化", ENDescription: "Improving performance"},
+			TypeMessage{Type: EXIT, ZHDescription: "退出", ENDescription: "Exit commit"},
 		},
-		PerPage: 4,
-		HeaderFunc: func(m selector.Model, prtIndex, drtIndex int) string {
-			return fmt.Sprintf(selector.DefaultHeader+"\nCurrent Data index: %d\nCurrent Selected: %v", m.Index(), m.Selected())
+		PerPage:    6,
+		HeaderFunc: selector.DefaultHeaderWithAppend("Select Commit Type:"),
+		SelectedFunc: func(m selector.Model, prtIndex, drtIndex int) string {
+			t := m.PageData()[prtIndex].(TypeMessage)
+			return fmt.Sprintf("[%d] %s (%s)", drtIndex+1, t.Type, t.ENDescription)
 		},
-		SelectedFunc:   selector.DefaultSelectedFuncWithIndex("[%d]"),
-		UnSelectedFunc: selector.DefaultUnSelectedFuncWithIndex(" %d."),
+		UnSelectedFunc: func(m selector.Model, prtIndex, drtIndex int) string {
+			t := m.PageData()[prtIndex].(TypeMessage)
+			return fmt.Sprintf(" %d. %s (%s)", drtIndex+1, t.Type, t.ENDescription)
+		},
+		FooterFunc: func(m selector.Model, prtIndex, drtIndex int) string {
+			t := m.PageSelected().(TypeMessage)
+			footerTpl := `--------- Commit Type ----------
+Type:   %s
+Description:    %s(%s)`
+			return fmt.Sprintf(footerTpl, t.Type, t.ZHDescription, t.ENDescription)
+		},
 	}
 
 	p := tea.NewProgram(m)
