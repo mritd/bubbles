@@ -39,7 +39,9 @@ type Model struct {
 	init            bool
 	canceled        bool
 	index           int
+	maxIndex        int
 	pageIndex       int
+	pageMaxIndex    int
 }
 
 func (m Model) Init() tea.Cmd {
@@ -84,12 +86,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			return m, tea.Quit
-		case "up", "pgup", "left", "h", "j":
-			m.updatePageData()
-			m.MoveUp()
-		case "down", "pgdown", "right", "l", "k":
+		case "down":
 			m.MoveDown()
-			m.updatePageData()
+		case "up":
+			m.MoveUp()
+			if m.pageIndex == 0 && m.index > 0 {
+				m.pageData = m.Data[m.index-1 : m.index-1+(m.PerPage-1)]
+			}
+
+		case "pgdown", "right", "l", "k":
+			m.NextPage()
+		case "pgup", "left", "h", "j":
+			m.PrePage()
 		}
 	}
 	return m, nil
@@ -119,6 +127,29 @@ func (m *Model) Canceled() bool {
 	return m.canceled
 }
 
+func (m *Model) MoveDown() {
+	//// 页面索引到达最大值
+	//if m.pageIndex == (m.PerPage-1) && m.index < len(m.Data)-1 {
+	//	m.pageData = m.Data[m.index-(m.PerPage-1) : m.index]
+	//}
+
+	// 页面索引没有到达最大值，页面数据区不需要变更
+	if m.pageIndex < m.PerPage-1 {
+		m.pageIndex++
+		// 页面索引已到达最大值，再次增加将泄出
+		// 此时保持索引最大值，滑动页面数据区窗口
+	} else if m.pageIndex == m.PerPage-1 {
+		// 滑动前检测全局索引是否达到最大值
+		if m.index < len(m.Data)-1 {
+			m.pageData = m.Data[m.index+1 : m.index+1+m.PerPage]
+			m.index++
+		}
+	}
+	if m.index < len(m.Data)-1 {
+		m.index++
+	}
+}
+
 func (m *Model) MoveUp() {
 	if m.pageIndex > 0 {
 		m.pageIndex--
@@ -128,17 +159,51 @@ func (m *Model) MoveUp() {
 	}
 }
 
-func (m *Model) MoveDown() {
-	if m.pageIndex < m.PerPage-1 {
-		m.pageIndex++
-	}
+// NextPage 触发下翻页动作，翻页时忽略页面索引(pageIndex)位置
+func (m *Model) NextPage() {
+	// 全局索引没有到达最大值
 	if m.index < len(m.Data)-1 {
-		m.index++
+		// m.PerPage-m.pageIndex = 当前页索引距离页尾差值
+		// m.index+当前页索引距离页尾差值 = 当前页尾全局索引
+		// 如果 当前页尾全局索引 < (全局索引总长度 - 每页长度)
+		// 说明 当前页尾索引引距离最大值至少有一页长度剩余
+		if m.index+((m.PerPage-1)-m.pageIndex) < (len(m.Data)-1)-(m.PerPage-1) {
+			// 步进一页
+			m.index += m.PerPage - 1
+			m.pageData = m.Data[m.index : m.index+(m.PerPage-1)]
+		} else {
+			// 如果全局索引没有到达最大值且剩余小于一页
+			// 直接步进到最大值
+			m.index = len(m.Data) - 1
+			m.pageData = m.Data[len(m.Data)-1-(m.PerPage-1):]
+		}
+	}
+}
+
+// PrePage 触发上翻页动作，翻页时忽略页面索引(pageIndex)位置
+func (m *Model) PrePage() {
+	// 全局索引没有到达最小值
+	if m.index > 0 {
+		// 全局索引距离最小值至少有一页长度剩余
+		if len(m.Data)-1-m.index >= m.PerPage {
+			// 步进一页
+			m.pageData = m.Data[m.index-m.PerPage : m.index]
+			m.index -= m.PerPage
+		} else {
+			// 如果全局索引没有到达最小值且剩余小于一页
+			// 直接步进到最小值
+			m.pageData = m.Data[:m.PerPage]
+			m.index = 0
+		}
 	}
 }
 
 func (m *Model) initData() {
+	m.pageIndex = 0
+	m.pageMaxIndex = m.PerPage - 1
 	m.pageData = m.Data[:m.PerPage]
+	m.index = 0
+	m.maxIndex = len(m.Data) - 1
 	if m.HeaderFunc == nil {
 		m.HeaderFunc = func(_ Model, _, _ int) string { return DefaultHeader }
 	}
@@ -171,17 +236,6 @@ func (m *Model) initData() {
 		m.FooterColor = defaultFooterColor
 	}
 	m.init = true
-}
-
-func (m *Model) updatePageData() {
-	// 达到最大值，向下滑动窗口
-	if m.pageIndex == m.PerPage-1 && m.index < len(m.Data) {
-		m.pageData = m.Data[m.index+1-m.PerPage : m.index+1]
-	}
-	// 达到最小值，向上滑动窗口
-	if m.pageIndex == 0 && m.index > 0 {
-		m.pageData = m.Data[m.index-1 : m.index-1+m.PerPage]
-	}
 }
 
 func fontColor(str, color string) string {
