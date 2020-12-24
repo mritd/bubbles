@@ -1,4 +1,4 @@
-package tplselector
+package selector
 
 import (
 	"fmt"
@@ -72,7 +72,7 @@ func (m Model) View() string {
 	return fmt.Sprintf("%s\n\n%s\n%s\n", header, data, footer)
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.init {
 		m.initData()
 	}
@@ -194,4 +194,22 @@ func genSpaces(l int) string {
 		s += " "
 	}
 	return s
+}
+
+func DefaultHeaderWithAppend(append string) func(m Model, prtIndex, drtIndex int) string {
+	return func(m Model, prtIndex, drtIndex int) string {
+		return DefaultHeader + "\n" + append
+	}
+}
+
+func DefaultSelectedFuncWithIndex(indexFormat string) func(m Model, prtIndex, drtIndex int) string {
+	return func(m Model, prtIndex, drtIndex int) string {
+		return fmt.Sprintf(indexFormat+" %v", drtIndex+1, m.PageData()[prtIndex])
+	}
+}
+
+func DefaultUnSelectedFuncWithIndex(indexFormat string) func(m Model, prtIndex, drtIndex int) string {
+	return func(m Model, prtIndex, drtIndex int) string {
+		return fmt.Sprintf(indexFormat+" %v", drtIndex+1, m.PageData()[prtIndex])
+	}
 }
