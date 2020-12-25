@@ -43,7 +43,7 @@ func main() {
 		PerPage: 5,
 		// Use the arrow keys to navigate: ↓ ↑ → ←
 		// Select Commit Type:
-		HeaderFunc: selector.DefaultHeaderWithAppend("Select Commit Type:"),
+		HeaderFunc: selector.DefaultHeaderFuncWithAppend("Select Commit Type:"),
 		SelectedFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
 			t := obj.(TypeMessage)
 			// [1] feat (Introducing new features)
@@ -74,6 +74,7 @@ Description: %s(%s)`
 	if !m.Canceled() {
 		log.Printf("selected index => %d\n", m.Index())
 		log.Printf("selected vaule => %s\n", m.Selected())
+		log.Printf("selected vaule => %s\n", m.PageSelected())
 	} else {
 		log.Println("user canceled...")
 	}

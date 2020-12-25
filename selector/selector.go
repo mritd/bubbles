@@ -23,25 +23,45 @@ const (
 var term = termenv.ColorProfile()
 
 type Model struct {
-	HeaderFunc      func(m Model, obj interface{}, gdIndex int) string
-	HeaderColor     string
-	Cursor          string
-	CursorColor     string
-	SelectedFunc    func(m Model, obj interface{}, gdIndex int) string
-	SelectedColor   string
-	UnSelectedFunc  func(m Model, obj interface{}, gdIndex int) string
+	// HeaderFunc 头部渲染函数
+	HeaderFunc func(m Model, obj interface{}, gdIndex int) string
+	// HeaderColor 头部渲染颜色
+	HeaderColor string
+	// Cursor 光标样式
+	Cursor string
+	// CursorColor 光标渲染颜色
+	CursorColor string
+	// SelectedFunc 被选中数据渲染函数
+	SelectedFunc func(m Model, obj interface{}, gdIndex int) string
+	// SelectedColor 被选中数据渲染颜色
+	SelectedColor string
+	// UnSelectedFunc 未选中数据渲染函数
+	UnSelectedFunc func(m Model, obj interface{}, gdIndex int) string
+	// UnSelectedColor 未选中数据渲染颜色
 	UnSelectedColor string
-	FooterFunc      func(m Model, obj interface{}, gdIndex int) string
-	FooterColor     string
-	PerPage         int
-	Data            []interface{}
-	pageData        []interface{}
-	init            bool
-	canceled        bool
-	index           int
-	maxIndex        int
-	pageIndex       int
-	pageMaxIndex    int
+	// FooterFunc 底部渲染函数
+	FooterFunc func(m Model, obj interface{}, gdIndex int) string
+	// FooterColor 底部渲染颜色
+	FooterColor string
+	// PerPage 每页数据量
+	PerPage int
+	// Data 要渲染的数据集合
+	Data []interface{}
+
+	// init 指示数据模型是否完成了初始化
+	init bool
+	// canceled 指示是否取消了操作
+	canceled bool
+	// pageData 当前页面实时渲染的数据集合
+	pageData []interface{}
+	// index 全局实时索引位置
+	index int
+	// maxIndex 全局允许的最大索引位置
+	maxIndex int
+	// pageIndex 当前页面实时索引位置
+	pageIndex int
+	// pageMaxIndex 当前页面允许的最大索引位置
+	pageMaxIndex int
 }
 
 // Init 方法执行一些 I/O 初始化动作
@@ -141,26 +161,32 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// Index 返回全局实时索引位置
 func (m *Model) Index() int {
 	return m.index
 }
 
+// PageIndex 返回页面实时索引位置
 func (m *Model) PageIndex() int {
 	return m.pageIndex
 }
 
+// PageData 返回当前页面数据区切片
 func (m *Model) PageData() []interface{} {
 	return m.pageData
 }
 
+// Selected 返回当前选中的元素
 func (m *Model) Selected() interface{} {
 	return m.Data[m.index]
 }
 
+// PageSelected 返回当前选中的元素(与 Selected 方法效果一致)
 func (m *Model) PageSelected() interface{} {
 	return m.pageData[m.pageIndex]
 }
 
+// Canceled 判断是否取消了操作
 func (m *Model) Canceled() bool {
 	return m.canceled
 }
@@ -268,6 +294,7 @@ func (m *Model) PrePage() {
 	}
 }
 
+// Forward 触发快速跳转动作，如果按键不合法则维持原状
 func (m *Model) Forward(pageIndex string) {
 	// 输入层保证数据准确性，直接忽略 err
 	idx, _ := strconv.Atoi(pageIndex)
@@ -287,6 +314,7 @@ func (m *Model) Forward(pageIndex string) {
 
 }
 
+// initData 负责初始化数据模型，初始化时会设置默认值以及修复错误的参数设置
 func (m *Model) initData() {
 	if m.PerPage > len(m.Data) || m.PerPage < 1 {
 		m.PerPage = len(m.Data)
@@ -341,10 +369,12 @@ func (m *Model) pageIndexInfo() (start, end int) {
 	return
 }
 
+// fontColor 对给定的字符串设置颜色并加粗字体
 func fontColor(str, color string) string {
 	return termenv.String(str).Foreground(term.Color(color)).Bold().String()
 }
 
+// genSpaces 生成给定长度的空格
 func genSpaces(l int) string {
 	var s string
 	for i := 0; i < l; i++ {
@@ -353,18 +383,21 @@ func genSpaces(l int) string {
 	return s
 }
 
-func DefaultHeaderWithAppend(append string) func(m Model, obj interface{}, gdIndex int) string {
+// DefaultHeaderFuncWithAppend 返回默认 HeaderFunc，并将给定字符串附加到默认头部下一行
+func DefaultHeaderFuncWithAppend(append string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return DefaultHeader + "\n" + append
 	}
 }
 
+// DefaultSelectedFuncWithIndex 返回默认 SelectedFunc，并增加给定格式的序号前缀
 func DefaultSelectedFuncWithIndex(indexFormat string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj)
 	}
 }
 
+// DefaultUnSelectedFuncWithIndex 返回默认 UnSelectedFunc，并增加给定格式的序号前缀
 func DefaultUnSelectedFuncWithIndex(indexFormat string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj)
