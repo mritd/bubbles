@@ -20,7 +20,6 @@ const (
 	TEST     CommitType = "test"
 	CHORE    CommitType = "chore"
 	PERF     CommitType = "perf"
-	EXIT     CommitType = "exit"
 )
 
 type TypeMessage struct {
@@ -40,9 +39,10 @@ func main() {
 			TypeMessage{Type: TEST, ZHDescription: "增加测试", ENDescription: "When adding missing tests"},
 			TypeMessage{Type: CHORE, ZHDescription: "CI/CD 变动", ENDescription: "Changing CI/CD"},
 			TypeMessage{Type: PERF, ZHDescription: "性能优化", ENDescription: "Improving performance"},
-			TypeMessage{Type: EXIT, ZHDescription: "退出", ENDescription: "Exit commit"},
 		},
-		PerPage:    4,
+		PerPage: 5,
+		// Use the arrow keys to navigate: ↓ ↑ → ←
+		// Select Commit Type:
 		HeaderFunc: selector.DefaultHeaderWithAppend("Select Commit Type:"),
 		SelectedFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
 			t := obj.(TypeMessage)
