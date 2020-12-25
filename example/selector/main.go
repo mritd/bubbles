@@ -42,21 +42,26 @@ func main() {
 			TypeMessage{Type: PERF, ZHDescription: "性能优化", ENDescription: "Improving performance"},
 			TypeMessage{Type: EXIT, ZHDescription: "退出", ENDescription: "Exit commit"},
 		},
-		PerPage:    6,
+		PerPage:    4,
 		HeaderFunc: selector.DefaultHeaderWithAppend("Select Commit Type:"),
-		SelectedFunc: func(m selector.Model, prtIndex, drtIndex int) string {
-			t := m.PageData()[prtIndex].(TypeMessage)
-			return fmt.Sprintf("[%d] %s (%s)", drtIndex+1, t.Type, t.ENDescription)
+		SelectedFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
+			t := obj.(TypeMessage)
+			// [1] feat (Introducing new features)
+			return fmt.Sprintf("[%d] %s (%s)", gdIndex+1, t.Type, t.ENDescription)
 		},
-		UnSelectedFunc: func(m selector.Model, prtIndex, drtIndex int) string {
-			t := m.PageData()[prtIndex].(TypeMessage)
-			return fmt.Sprintf(" %d. %s (%s)", drtIndex+1, t.Type, t.ENDescription)
+		UnSelectedFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
+			t := obj.(TypeMessage)
+			// 2. fix (Bug fix)
+			return fmt.Sprintf(" %d. %s (%s)", gdIndex+1, t.Type, t.ENDescription)
 		},
-		FooterFunc: func(m selector.Model, prtIndex, drtIndex int) string {
+		FooterFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
 			t := m.PageSelected().(TypeMessage)
 			footerTpl := `--------- Commit Type ----------
-Type:   %s
-Description:    %s(%s)`
+Type: %s
+Description: %s(%s)`
+			// --------- Commit Type ----------
+			// Type: feat
+			// Description: 新功能(Introducing new features)
 			return fmt.Sprintf(footerTpl, t.Type, t.ZHDescription, t.ENDescription)
 		},
 	}
