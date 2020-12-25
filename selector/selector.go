@@ -130,9 +130,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.MoveDown()
 		case "up":
 			m.MoveUp()
-		case "pgdown", "right", "l", "k":
+		case "right", "pgdown", "l", "k":
 			m.NextPage()
-		case "pgup", "left", "h", "j":
+		case "left", "pgup", "h", "j":
 			m.PrePage()
 		}
 	}
