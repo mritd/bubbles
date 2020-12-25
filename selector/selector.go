@@ -2,6 +2,7 @@ package selector
 
 import (
 	"fmt"
+	"strconv"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-runewidth"
@@ -32,7 +33,6 @@ type Model struct {
 	UnSelectedColor string
 	FooterFunc      func(m Model, obj interface{}, gdIndex int) string
 	FooterColor     string
-	FooterShowIndex bool
 	PerPage         int
 	Data            []interface{}
 	pageData        []interface{}
@@ -134,6 +134,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.NextPage()
 		case "left", "pgup", "h", "j":
 			m.PrePage()
+		case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+			m.Forward(msg.String())
 		}
 	}
 	return m, nil
@@ -266,14 +268,35 @@ func (m *Model) PrePage() {
 	}
 }
 
+func (m *Model) Forward(pageIndex string) {
+	// 输入层保证数据准确性，直接忽略 err
+	idx, _ := strconv.Atoi(pageIndex)
+	idx--
+
+	// 目标索引位置已经超出页面最大索引，直接忽略
+	if idx > m.pageMaxIndex {
+		return
+	}
+
+	// 计算移动到目标长度
+	l := idx - m.pageIndex
+	// 全局索引移动
+	m.index += l
+	// 页面索引移动
+	m.pageIndex = idx
+
+}
+
 func (m *Model) initData() {
-	m.pageIndex = 0
-	m.pageMaxIndex = m.PerPage - 1
-	if m.PerPage >= len(m.Data) {
+	if m.PerPage > len(m.Data) || m.PerPage < 1 {
+		m.PerPage = len(m.Data)
 		m.pageData = m.Data
 	} else {
 		m.pageData = m.Data[:m.PerPage]
 	}
+
+	m.pageIndex = 0
+	m.pageMaxIndex = m.PerPage - 1
 	m.index = 0
 	m.maxIndex = len(m.Data) - 1
 	if m.HeaderFunc == nil {
@@ -302,7 +325,6 @@ func (m *Model) initData() {
 	}
 	if m.FooterFunc == nil {
 		m.FooterFunc = func(_ Model, _ interface{}, _ int) string { return DefaultFooter }
-		m.FooterShowIndex = true
 	}
 	if m.FooterColor == "" {
 		m.FooterColor = defaultFooterColor
