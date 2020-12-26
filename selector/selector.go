@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/mritd/bubbles/common"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-runewidth"
-	"github.com/muesli/termenv"
 )
 
 const (
@@ -20,8 +21,18 @@ const (
 	defaultUnSelectedColor = "8"
 )
 
-var term = termenv.ColorProfile()
-
+// Use the arrow keys to navigate: ↓ ↑ → ←
+// Select Commit Type:
+//
+// » [1] feat (Introducing new features)
+//    2. fix (Bug fix)
+//    3. docs (Writing docs)
+//    4. style (Improving structure/format of the code)
+//    5. refactor (Refactoring code)
+//
+// --------- Commit Type ----------
+// Type: feat
+// Description: 新功能(Introducing new features)
 type Model struct {
 	// HeaderFunc 头部渲染函数
 	HeaderFunc func(m Model, obj interface{}, gdIndex int) string
@@ -72,7 +83,7 @@ func (m Model) Init() tea.Cmd {
 // View 方法读取数据模型数据状态进行渲染
 func (m Model) View() string {
 	// 光标直接渲染，无需处理
-	cursor := fontColor(m.Cursor, m.CursorColor)
+	cursor := common.FontColor(m.Cursor, m.CursorColor)
 	// 模板函数可能会在列表头、尾和数据区动态显示，需要增加动态索引
 	var header, data, footer string
 	for i, obj := range m.pageData {
@@ -119,15 +130,15 @@ func (m Model) View() string {
 			// obj: 当前遍历到数据区的单条数据，将其传递到用户自定义渲染函数帮助用户得知当前需要渲染的数据
 			// globalDynamicIndex: 当前遍历元素所对应的全局数据索引位置，将其传递到用户自定义渲染函数
 			//                     帮助用户实现增加序号等渲染动作
-			dataLine = fontColor(m.SelectedFunc(m, obj, globalDynamicIndex), m.SelectedColor) + "\n"
+			dataLine = common.FontColor(m.SelectedFunc(m, obj, globalDynamicIndex), m.SelectedColor) + "\n"
 		} else {
 			// 未选中行光标不显示，通过空白符对齐选中行
-			cursorPrefix = genSpaces(runewidth.StringWidth(m.Cursor) + 1)
-			dataLine = fontColor(m.UnSelectedFunc(m, obj, globalDynamicIndex), m.UnSelectedColor) + "\n"
+			cursorPrefix = common.GenSpaces(runewidth.StringWidth(m.Cursor) + 1)
+			dataLine = common.FontColor(m.UnSelectedFunc(m, obj, globalDynamicIndex), m.UnSelectedColor) + "\n"
 		}
 		data += cursorPrefix + dataLine
-		header = fontColor(m.HeaderFunc(m, obj, globalDynamicIndex), m.HeaderColor)
-		footer = fontColor(m.FooterFunc(m, obj, globalDynamicIndex), m.FooterColor)
+		header = common.FontColor(m.HeaderFunc(m, obj, globalDynamicIndex), m.HeaderColor)
+		footer = common.FontColor(m.FooterFunc(m, obj, globalDynamicIndex), m.FooterColor)
 	}
 
 	return fmt.Sprintf("%s\n\n%s\n%s\n", header, data, footer)
@@ -367,20 +378,6 @@ func (m *Model) pageIndexInfo() (start, end int) {
 	// 数据区起始位置 + 单页大小 = 数据区终止索引
 	end = start + m.PerPage
 	return
-}
-
-// fontColor 对给定的字符串设置颜色并加粗字体
-func fontColor(str, color string) string {
-	return termenv.String(str).Foreground(term.Color(color)).Bold().String()
-}
-
-// genSpaces 生成给定长度的空格
-func genSpaces(l int) string {
-	var s string
-	for i := 0; i < l; i++ {
-		s += " "
-	}
-	return s
 }
 
 // DefaultHeaderFuncWithAppend 返回默认 HeaderFunc，并将给定字符串附加到默认头部下一行
