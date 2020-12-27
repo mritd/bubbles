@@ -1,3 +1,5 @@
+// selector is a terminal single-selection list library. selector library provides the
+// functions of page up and down and key movement, and supports custom rendering methods.
 package selector
 
 import (
@@ -21,6 +23,9 @@ const (
 	defaultUnSelectedColor = "8"
 )
 
+// Model is a data container used to store TUI status information,
+// the ui rendering success style is as follows:
+//
 // Use the arrow keys to navigate: ↓ ↑ → ←
 // Select Commit Type:
 //
@@ -75,12 +80,12 @@ type Model struct {
 	pageMaxIndex int
 }
 
-// Init init func performs some io initialization actions
+// Init performs some io initialization actions
 func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-// View view func reads the data state of the data model for rendering
+// View reads the data state of the data model for rendering
 func (m Model) View() string {
 	// the cursor only needs to be displayed correctly
 	cursor := common.FontColor(m.Cursor, m.CursorColor)
@@ -152,7 +157,7 @@ func (m Model) View() string {
 	return fmt.Sprintf("%s\n\n%s\n%s\n", header, data, footer)
 }
 
-// Update update method responds to various events and modifies the data model
+// Update method responds to various events and modifies the data model
 // according to the corresponding events
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.init {
@@ -181,37 +186,37 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// Index index return the global real time index
+// Index return the global real time index
 func (m *Model) Index() int {
 	return m.index
 }
 
-// PageIndex pageIndex return the real time index of the page
+// PageIndex return the real time index of the page
 func (m *Model) PageIndex() int {
 	return m.pageIndex
 }
 
-// PageData pageData return the current page data area slice
+// PageData return the current page data area slice
 func (m *Model) PageData() []interface{} {
 	return m.pageData
 }
 
-// Selected selected return the currently selected data
+// Selected return the currently selected data
 func (m *Model) Selected() interface{} {
 	return m.Data[m.index]
 }
 
-// PageSelected pageSelected return the currently selected data(same as the Selected func)
+// PageSelected return the currently selected data(same as the Selected func)
 func (m *Model) PageSelected() interface{} {
 	return m.pageData[m.pageIndex]
 }
 
-// Canceled canceled determine whether the operation is cancelled
+// Canceled determine whether the operation is cancelled
 func (m *Model) Canceled() bool {
 	return m.canceled
 }
 
-// MoveDown moveDown executes the downward movement of the cursor,
+// MoveDown executes the downward movement of the cursor,
 // while adjusting the internal index and refreshing the data area
 func (m *Model) MoveDown() {
 	// the page index has not reached the maximum value, and the page
@@ -239,7 +244,7 @@ func (m *Model) MoveDown() {
 	}
 }
 
-// MoveUp moveUp performs an upward movement of the cursor,
+// MoveUp performs an upward movement of the cursor,
 // while adjusting the internal index and refreshing the data area
 func (m *Model) MoveUp() {
 	// the page index has not reached the minimum value, and the page
@@ -267,80 +272,87 @@ func (m *Model) MoveUp() {
 	}
 }
 
-// NextPage 触发下翻页动作，翻页时不变更页面实时索引(pageIndex)位置
+// NextPage triggers the page-down action, and does not change
+// the real-time page index(pageIndex)
 func (m *Model) NextPage() {
-	// 获取数据区对应的全局数据区切片起始和终止位置: m.Data[start:end]
+	// Get the start and end position of the page data area slice: m.Data[start:end]
 	//
-	// 注意: go 的切片是左闭右开的 [start,end)，假设全局数据区无限长度
-	//      的情况下，页面数据区的 end 应当始终是实际页面长度+1，也就是说
-	//      end 最大值在有限长度下应该等于 len(m.Data)
+	// note: the slice is closed left and opened right: `[start,end)`
+	//       assuming that the global data area has unlimited length,
+	//       end should always be the actual page `length+1`,
+	//       the maximum value of end should be equal to `len(m.Data)`
+	//       under limited length
 	pageStart, pageEnd := m.pageIndexInfo()
-	// 数据区终止位置没有到达最大值时分为两种情况
+	// there are two cases when `end` does not reach the maximum value
 	if pageEnd < len(m.Data) {
-		// 数据区终止位置距离全局最大索引还有至少一个页面长度
+		// the `end` value is at least one page length away from the global maximum index
 		if len(m.Data)-pageEnd >= m.PerPage {
-			// 页面数据区向后滑动一个页面
+			// slide back one page in the page data area
 			m.pageData = m.Data[pageStart+m.PerPage : pageEnd+m.PerPage]
-			// 直接将全局实时索引步进一个页面长度
+			// Global real-time index increases by one page length
 			m.index += m.PerPage
-		} else { // 全局实时索引距离全局最大索引小于一个页面长度
-			// 页面数据区直接滑动到最后
+		} else { // `end` is less than a page length from the global maximum index
+			// slide the page data area directly to the end
 			m.pageData = m.Data[len(m.Data)-m.PerPage : len(m.Data)]
-			// 由于已经滑动到了最后，所以: 滑动距离 = 滑动最后的索引位置 - 未滑动前位置
-			// 此时将全局实时索引也同步滑动距离即可
+			// `sliding distance` = `position after sliding` - `position before sliding`
+			// the global real-time index should also synchronize the same sliding distance
 			m.index += len(m.Data) - pageEnd
 		}
 	}
 }
 
-// PrePage 触发上翻页动作，翻页时忽略页面索引(pageIndex)位置
+// PrePage triggers the page-up action, and does not change
+// the real-time page index(pageIndex)
 func (m *Model) PrePage() {
-	// 获取数据区对应的全局数据区切片起始和终止位置: m.Data[start:end]
+	// Get the start and end position of the page data area slice: m.Data[start:end]
 	//
-	// 注意: go 的切片是左闭右开的 [start,end)，假设全局数据区无限长度
-	//      的情况下，页面数据区的 end 应当始终是实际页面长度+1，也就是说
-	//      end 最大值在有限长度下应该等于 len(m.Data)
+	// note: the slice is closed left and opened right: `[start,end)`
+	//       assuming that the global data area has unlimited length,
+	//       end should always be the actual page `length+1`,
+	//       the maximum value of end should be equal to `len(m.Data)`
+	//       under limited length
 	pageStart, pageEnd := m.pageIndexInfo()
-	// 数据区起始位置没有达到最小值时分为两种情况
+	// there are two cases when `start` does not reach the minimum value
 	if pageStart > 0 {
-		// 数据区起始位置距离最小值至少有一页长度剩余
+		// `start` is at least one page length from the minimum
 		if pageStart >= m.PerPage {
-			// 后退一页
+			// slide the page data area forward one page
 			m.pageData = m.Data[pageStart-m.PerPage : pageEnd-m.PerPage]
-			// 直接将全局实时索引后退一个页面长度
+			// Global real-time index reduces the length of one page
 			m.index -= m.PerPage
-		} else {
-			// 如果数据区起始位置距离最小值小于一页
-			// 直接后退到最小值
+		} else { // `start` to the minimum value less than one page length
+			// slide the page data area directly to the start
 			m.pageData = m.Data[:m.PerPage]
-			// 由于已经滑动到了最小值，所以: 滑动距离 = 滑动前位置 - 最小值0
-			// 此时将全局实时索引也同步滑动距离即可
+			// `sliding distance` = `position before sliding` - `minimum value(0)`
+			// the global real-time index should also synchronize the same sliding distance
 			m.index -= pageStart - 0
 		}
 	}
 }
 
-// Forward 触发快速跳转动作，如果按键不合法则维持原状
+// Forward triggers a fast jump action, if the pageIndex
+// is invalid, keep it as it is
 func (m *Model) Forward(pageIndex string) {
-	// 输入层保证数据准确性，直接忽略 err
+	// the caller guarantees that pageIndex is an integer, and err is not processed here
 	idx, _ := strconv.Atoi(pageIndex)
 	idx--
 
-	// 目标索引位置已经超出页面最大索引，直接忽略
+	// pageIndex has exceeded the maximum index of the page, ignore
 	if idx > m.pageMaxIndex {
 		return
 	}
 
-	// 计算移动到目标长度
+	// calculate the distance moved to pageIndex
 	l := idx - m.pageIndex
-	// 全局索引移动
+	// update the global real time index
 	m.index += l
-	// 页面索引移动
+	// update the page real time index
 	m.pageIndex = idx
 
 }
 
-// initData 负责初始化数据模型，初始化时会设置默认值以及修复错误的参数设置
+// initData initialize the data model, set the default value and
+// fix the wrong parameter settings during initialization
 func (m *Model) initData() {
 	if m.PerPage > len(m.Data) || m.PerPage < 1 {
 		m.PerPage = len(m.Data)
@@ -386,30 +398,34 @@ func (m *Model) initData() {
 	m.init = true
 }
 
-// pageIndexInfo 返回页面数据区对应全局数据区切片的起始、终止位置
+// pageIndexInfo return the start and end positions of the slice of the
+// page data area corresponding to the global data area
 func (m *Model) pageIndexInfo() (start, end int) {
-	// 全局实时索引 - 全局页面实时索引 = 数据区起始索引
+	// `Global real-time index` - `page real-time index` = `start index of page data area`
 	start = m.index - m.pageIndex
-	// 数据区起始位置 + 单页大小 = 数据区终止索引
+	// `Page data area start index` + `single page size` = `page data area end index`
 	end = start + m.PerPage
 	return
 }
 
-// DefaultHeaderFuncWithAppend 返回默认 HeaderFunc，并将给定字符串附加到默认头部下一行
+// DefaultHeaderFuncWithAppend return the default HeaderFunc and append
+// the given string to the next line of the default header
 func DefaultHeaderFuncWithAppend(append string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return DefaultHeader + "\n" + append
 	}
 }
 
-// DefaultSelectedFuncWithIndex 返回默认 SelectedFunc，并增加给定格式的序号前缀
+// DefaultSelectedFuncWithIndex return the default SelectedFunc and adds
+// the serial number prefix of the given format
 func DefaultSelectedFuncWithIndex(indexFormat string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj)
 	}
 }
 
-// DefaultUnSelectedFuncWithIndex 返回默认 UnSelectedFunc，并增加给定格式的序号前缀
+// DefaultUnSelectedFuncWithIndex return the default UnSelectedFunc and
+// adds the serial number prefix of the given format
 func DefaultUnSelectedFuncWithIndex(indexFormat string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj)
