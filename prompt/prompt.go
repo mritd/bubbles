@@ -15,13 +15,17 @@ const (
 	DefaultPrompt            = "Please Input: "
 	DefaultValidateOkPrefix  = "✔"
 	DefaultValidateErrPrefix = "✘"
+	defaultPromptOkColor     = "2"
 	defaultValidateOkColor   = "2"
 	defaultValidateErrColor  = "1"
 )
 
+// EchoMode sets the input behavior of the text input field.
+type EchoMode int
+
 const (
 	// EchoNormal displays text as is. This is the default behavior.
-	EchoNormal int = iota
+	EchoNormal EchoMode = iota
 
 	// EchoPassword displays the EchoCharacter mask instead of actual
 	// characters.  This is commonly used for password fields.
@@ -61,12 +65,12 @@ func (m *Model) initData() {
 		m.input.Width = m.Width
 	}
 	if m.PromptColor == "" {
-		m.PromptColor = "2"
+		m.PromptColor = defaultPromptOkColor
 	}
 	if m.Prompt == "" {
-		m.Prompt, m.input.Prompt = common.FontColor(DefaultPrompt, "2"), common.FontColor(DefaultPrompt, "2")
+		m.Prompt, m.input.Prompt = common.FontColor(DefaultPrompt, m.PromptColor), common.FontColor(DefaultPrompt, m.PromptColor)
 	} else {
-		m.input.Prompt = m.Prompt
+		m.input.Prompt = common.FontColor(m.Prompt, m.PromptColor)
 	}
 	if m.ValidateFunc == nil {
 		m.ValidateFunc = VFDoNothing
@@ -130,12 +134,12 @@ func (m Model) View() string {
 			errMsg = common.FontColor(fmt.Sprintf("%s ERROR: %s\n", m.ValidateErrPrefix, m.err.Error()), defaultValidateErrColor)
 			return fmt.Sprintf("%s\n%s\n", prompt, errMsg)
 		}
-		return prompt + "\n"
 	} else {
 		prefix = common.FontColor(m.ValidateOkPrefix, defaultValidateOkColor)
 		prompt = prefix + " " + m.input.View()
-		return prompt + "\n"
 	}
+
+	return prompt + "\n"
 }
 
 func (m *Model) Value() string {
