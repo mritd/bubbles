@@ -44,24 +44,24 @@ func main() {
 		// Use the arrow keys to navigate: ↓ ↑ → ←
 		// Select Commit Type:
 		HeaderFunc: selector.DefaultHeaderFuncWithAppend("Select Commit Type:"),
+		// [1] feat (Introducing new features)
 		SelectedFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
 			t := obj.(TypeMessage)
-			// [1] feat (Introducing new features)
 			return fmt.Sprintf("[%d] %s (%s)", gdIndex+1, t.Type, t.ENDescription)
 		},
+		// 2. fix (Bug fix)
 		UnSelectedFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
 			t := obj.(TypeMessage)
-			// 2. fix (Bug fix)
 			return fmt.Sprintf(" %d. %s (%s)", gdIndex+1, t.Type, t.ENDescription)
 		},
+		// --------- Commit Type ----------
+		// Type: feat
+		// Description: 新功能(Introducing new features)
 		FooterFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
 			t := m.PageSelected().(TypeMessage)
 			footerTpl := `--------- Commit Type ----------
 Type: %s
 Description: %s(%s)`
-			// --------- Commit Type ----------
-			// Type: feat
-			// Description: 新功能(Introducing new features)
 			return fmt.Sprintf(footerTpl, t.Type, t.ZHDescription, t.ENDescription)
 		},
 	}

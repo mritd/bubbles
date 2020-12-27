@@ -1,3 +1,5 @@
+// selector is a terminal single-selection list library. selector library provides the
+// functions of page up and down and key movement, and supports custom rendering methods.
 package selector
 
 import (
@@ -21,6 +23,9 @@ const (
 	defaultUnSelectedColor = "8"
 )
 
+// Model is a data container used to store TUI status information,
+// the ui rendering success style is as follows:
+//
 // Use the arrow keys to navigate: ↓ ↑ → ←
 // Select Commit Type:
 //
@@ -34,66 +39,69 @@ const (
 // Type: feat
 // Description: 新功能(Introducing new features)
 type Model struct {
-	// HeaderFunc 头部渲染函数
+	// HeaderFunc Header rendering function
 	HeaderFunc func(m Model, obj interface{}, gdIndex int) string
-	// HeaderColor 头部渲染颜色
+	// HeaderColor header rendering color
 	HeaderColor string
-	// Cursor 光标样式
+	// Cursor cursor rendering style
 	Cursor string
-	// CursorColor 光标渲染颜色
+	// CursorColor cursor rendering color
 	CursorColor string
-	// SelectedFunc 被选中数据渲染函数
+	// SelectedFunc selected data rendering function
 	SelectedFunc func(m Model, obj interface{}, gdIndex int) string
-	// SelectedColor 被选中数据渲染颜色
+	// SelectedColor selected data rendering color
 	SelectedColor string
-	// UnSelectedFunc 未选中数据渲染函数
+	// UnSelectedFunc unselected data rendering function
 	UnSelectedFunc func(m Model, obj interface{}, gdIndex int) string
-	// UnSelectedColor 未选中数据渲染颜色
+	// UnSelectedColor unselected data rendering color
 	UnSelectedColor string
-	// FooterFunc 底部渲染函数
+	// FooterFunc footer rendering function
 	FooterFunc func(m Model, obj interface{}, gdIndex int) string
-	// FooterColor 底部渲染颜色
+	// FooterColor footer rendering color
 	FooterColor string
-	// PerPage 每页数据量
+	// PerPage data count per page
 	PerPage int
-	// Data 要渲染的数据集合
+	// Data the data set to be rendered
 	Data []interface{}
 
-	// init 指示数据模型是否完成了初始化
+	// init indicates whether the data model has completed initialization
 	init bool
-	// canceled 指示是否取消了操作
+	// canceled indicates whether the operation was cancelled
 	canceled bool
-	// pageData 当前页面实时渲染的数据集合
+	// pageData data set rendered in real time on the current page
 	pageData []interface{}
-	// index 全局实时索引位置
+	// index global real time index
 	index int
-	// maxIndex 全局允许的最大索引位置
+	// maxIndex global max index
 	maxIndex int
-	// pageIndex 当前页面实时索引位置
+	// pageIndex real time index of current page
 	pageIndex int
-	// pageMaxIndex 当前页面允许的最大索引位置
+	// pageMaxIndex current page max index
 	pageMaxIndex int
 }
 
-// Init 方法执行一些 I/O 初始化动作
+// Init performs some io initialization actions
 func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-// View 方法读取数据模型数据状态进行渲染
+// View reads the data state of the data model for rendering
 func (m Model) View() string {
-	// 光标直接渲染，无需处理
+	// the cursor only needs to be displayed correctly
 	cursor := common.FontColor(m.Cursor, m.CursorColor)
-	// 模板函数可能会在列表头、尾和数据区动态显示，需要增加动态索引
+	// template functions may be displayed dynamically at the head, tail and data area
+	// of the list, and a dynamic index(globalDynamicIndex) needs to be added
 	var header, data, footer string
 	for i, obj := range m.pageData {
-		// 光标前缀(选中行有光标，非选中行没有)
+		// cursor prefix (selected lines need to be displayed,
+		// non-selected lines need not be displayed)
 		var cursorPrefix string
-		// 每行数据的渲染样式(选中行与非选中行颜色渲染等理论应当不同)
+		// the rendering style of each row of data (the rendering color
+		// of selected rows and non-selected rows is different)
 		var dataLine string
-		// 全局动态索引 globalDynamicIndex 计算时考虑三种情况:
+		// consider three cases when calculating globalDynamicIndex:
 		//
-		// 首页: pageIndex(页面实时索引)、index(全局实时索引) 两者保持一致
+		// first page: pageIndex(real time page index)、index(global real time index) keep the two consistent
 		//   1. feat (Introducing new features)
 		//   2. fix (Bug fix)
 		//   3. docs (Writing docs)
@@ -101,7 +109,7 @@ func (m Model) View() string {
 		//   5. refactor (Refactoring code)
 		//» [6] test (When adding missing tests)
 		//
-		// 滑动下翻页: pageIndex(页面实时索引) 固定到最大值，index(全局实时索引) 随滑动不断增大
+		// slide down to page: pageIndex fixed to maximum, index increasing with sliding
 		//   2. fix (Bug fix)
 		//   3. docs (Writing docs)
 		//   4. style (Improving structure/format of the code)
@@ -109,7 +117,7 @@ func (m Model) View() string {
 		//   6. test (When adding missing tests)
 		//» [7] chore (Changing CI/CD)
 		//
-		// 滑动上翻页: pageIndex(页面实时索引) 固定到最小值，index(全局实时索引) 随滑动不断减小
+		// swipe up to page: pageIndex fixed to minimum, index decrease with sliding
 		//» [3] docs (Writing docs)
 		//   4. style (Improving structure/format of the code)
 		//   5. refactor (Refactoring code)
@@ -117,22 +125,27 @@ func (m Model) View() string {
 		//   7. chore (Changing CI/CD)
 		//   8. perf (Improving performance)
 		//
-		// 三种情况下，m.index - m.pageIndex 的差值为 全局实时索引距离页面实时索引的距离，假定为 n
-		// 那么遍历页面数据区时，遍历索引 i 理论上就是页面实时索引 pageIndex 的一个 "替身"
-		// 此时 遍历索引 i + 全局实时索引距离页面实时索引的距离 n 即等于遍历时页面元素的全局索引位置 globalDynamicIndex
+		// in three cases, `m.index - m.pageIndex = n`, `n` is the distance between the global real-time
+		// index and the page real-time index. when traversing the page data area, think of the traversal
+		// index i as a real-time page index pageIndex, `i + n =` i corresponding global index
 		globalDynamicIndex := i + (m.index - m.pageIndex)
-		// 遍历数据区时，如果遍历的索引位置等于当前页面索引位置
-		// 则当前数据区的数据为列表菜单选中数据，否则为未选中数据
+		// when traversing the data area, if the traversed index is equal to the current page index,
+		// the currently traversed data is the data selected in the list menu, otherwise it is unselected data
 		if i == m.pageIndex {
-			// 光标与选中数据样式之间保持一个空格距离
+			// keep a space between the cursor and the selected data style
 			cursorPrefix = cursor + " "
-			// m: 当前对象副本，将其传递到用户自定义渲染函数，方便用户读取一些状态信息，从而完成渲染
-			// obj: 当前遍历到数据区的单条数据，将其传递到用户自定义渲染函数帮助用户得知当前需要渲染的数据
-			// globalDynamicIndex: 当前遍历元素所对应的全局数据索引位置，将其传递到用户自定义渲染函数
-			//                     帮助用户实现增加序号等渲染动作
+			// m: A copy of the current object and pass it to the user-defined rendering function to facilitate
+			//    the user to read some state information for rendering
+			//
+			// obj: The single data currently traversed to the data area; pass it to the user-defined rendering
+			//      function to help users know the current data that needs to be rendered
+			//
+			// globalDynamicIndex: The global data index corresponding to the current traverse data; pass it
+			//                     to the user-defined rendering function to help users achieve rendering
+			//                     actions such as adding serial numbers
 			dataLine = common.FontColor(m.SelectedFunc(m, obj, globalDynamicIndex), m.SelectedColor) + "\n"
 		} else {
-			// 未选中行光标不显示，通过空白符对齐选中行
+			// the cursor is not displayed on the unselected line, and the selected line is aligned with the blank character
 			cursorPrefix = common.GenSpaces(runewidth.StringWidth(m.Cursor) + 1)
 			dataLine = common.FontColor(m.UnSelectedFunc(m, obj, globalDynamicIndex), m.UnSelectedColor) + "\n"
 		}
@@ -144,7 +157,8 @@ func (m Model) View() string {
 	return fmt.Sprintf("%s\n\n%s\n%s\n", header, data, footer)
 }
 
-// Update 方法响应各种事件，根据对应事件修改数据模型
+// Update method responds to various events and modifies the data model
+// according to the corresponding events
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.init {
 		m.initData()
@@ -172,160 +186,173 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// Index 返回全局实时索引位置
+// Index return the global real time index
 func (m *Model) Index() int {
 	return m.index
 }
 
-// PageIndex 返回页面实时索引位置
+// PageIndex return the real time index of the page
 func (m *Model) PageIndex() int {
 	return m.pageIndex
 }
 
-// PageData 返回当前页面数据区切片
+// PageData return the current page data area slice
 func (m *Model) PageData() []interface{} {
 	return m.pageData
 }
 
-// Selected 返回当前选中的元素
+// Selected return the currently selected data
 func (m *Model) Selected() interface{} {
 	return m.Data[m.index]
 }
 
-// PageSelected 返回当前选中的元素(与 Selected 方法效果一致)
+// PageSelected return the currently selected data(same as the Selected func)
 func (m *Model) PageSelected() interface{} {
 	return m.pageData[m.pageIndex]
 }
 
-// Canceled 判断是否取消了操作
+// Canceled determine whether the operation is cancelled
 func (m *Model) Canceled() bool {
 	return m.canceled
 }
 
-// MoveDown 方法执行向下移动光标动作，同时调整内部索引并刷新数据区
+// MoveDown executes the downward movement of the cursor,
+// while adjusting the internal index and refreshing the data area
 func (m *Model) MoveDown() {
-	// 页面索引没有到达最大值，页面数据区不需要变更
+	// the page index has not reached the maximum value, and the page
+	// data area does not need to be updated
 	if m.pageIndex < m.pageMaxIndex {
 		m.pageIndex++
-		// 滑动前检测全局索引是否达到最大值
+		// check whether the global index reaches the maximum value before sliding
 		if m.index < m.maxIndex {
 			m.index++
 		}
 		return
 	}
 
-	// 页面索引到达最大值，滑动页面数据区窗口，页面索引维持最大值
+	// the page index reaches the maximum value, slide the page data area window,
+	// the page index maintains the maximum value
 	if m.pageIndex == m.pageMaxIndex {
-		// 滑动前检测全局索引是否达到最大值
+		// check whether the global index reaches the maximum value before sliding
 		if m.index < m.maxIndex {
-			// 全局索引递增
+			// global index increment
 			m.index++
-			// 窗口向下滑动一个元素
+			// window slide down one data
 			m.pageData = m.Data[m.index+1-m.PerPage : m.index+1]
 			return
 		}
 	}
 }
 
-// MoveUp 方法执行向上移动光标动作，同时调整内部索引并刷新数据区
+// MoveUp performs an upward movement of the cursor,
+// while adjusting the internal index and refreshing the data area
 func (m *Model) MoveUp() {
-	// 页面索引没有达到最小值，页面数据区不需要更新
+	// the page index has not reached the minimum value, and the page
+	// data area does not need to be updated
 	if m.pageIndex > 0 {
 		m.pageIndex--
-		// 滑动前检测全局索引是否达到最小值
+		// check whether the global index reaches the minimum before sliding
 		if m.index > 0 {
 			m.index--
 		}
 		return
 	}
 
-	// 页面索引到达最小值，滑动页面数据窗口，页面索引维持最小值
+	// the page index reaches the minimum value, slide the page data window,
+	// and the page index maintains the minimum value
 	if m.pageIndex == 0 {
-		// 滑动前检测全局索引是否达到最小值
+		// check whether the global index reaches the minimum before sliding
 		if m.index > 0 {
-			// 窗口向上滑动一个元素
+			// window slide up one data
 			m.pageData = m.Data[m.index-1 : m.index-1+m.PerPage]
-			// 全局索引递减
+			// global index decrement
 			m.index--
 			return
 		}
 	}
 }
 
-// NextPage 触发下翻页动作，翻页时不变更页面实时索引(pageIndex)位置
+// NextPage triggers the page-down action, and does not change
+// the real-time page index(pageIndex)
 func (m *Model) NextPage() {
-	// 获取数据区对应的全局数据区切片起始和终止位置: m.Data[start:end]
+	// Get the start and end position of the page data area slice: m.Data[start:end]
 	//
-	// 注意: go 的切片是左闭右开的 [start,end)，假设全局数据区无限长度
-	//      的情况下，页面数据区的 end 应当始终是实际页面长度+1，也就是说
-	//      end 最大值在有限长度下应该等于 len(m.Data)
+	// note: the slice is closed left and opened right: `[start,end)`
+	//       assuming that the global data area has unlimited length,
+	//       end should always be the actual page `length+1`,
+	//       the maximum value of end should be equal to `len(m.Data)`
+	//       under limited length
 	pageStart, pageEnd := m.pageIndexInfo()
-	// 数据区终止位置没有到达最大值时分为两种情况
+	// there are two cases when `end` does not reach the maximum value
 	if pageEnd < len(m.Data) {
-		// 数据区终止位置距离全局最大索引还有至少一个页面长度
+		// the `end` value is at least one page length away from the global maximum index
 		if len(m.Data)-pageEnd >= m.PerPage {
-			// 页面数据区向后滑动一个页面
+			// slide back one page in the page data area
 			m.pageData = m.Data[pageStart+m.PerPage : pageEnd+m.PerPage]
-			// 直接将全局实时索引步进一个页面长度
+			// Global real-time index increases by one page length
 			m.index += m.PerPage
-		} else { // 全局实时索引距离全局最大索引小于一个页面长度
-			// 页面数据区直接滑动到最后
+		} else { // `end` is less than a page length from the global maximum index
+			// slide the page data area directly to the end
 			m.pageData = m.Data[len(m.Data)-m.PerPage : len(m.Data)]
-			// 由于已经滑动到了最后，所以: 滑动距离 = 滑动最后的索引位置 - 未滑动前位置
-			// 此时将全局实时索引也同步滑动距离即可
+			// `sliding distance` = `position after sliding` - `position before sliding`
+			// the global real-time index should also synchronize the same sliding distance
 			m.index += len(m.Data) - pageEnd
 		}
 	}
 }
 
-// PrePage 触发上翻页动作，翻页时忽略页面索引(pageIndex)位置
+// PrePage triggers the page-up action, and does not change
+// the real-time page index(pageIndex)
 func (m *Model) PrePage() {
-	// 获取数据区对应的全局数据区切片起始和终止位置: m.Data[start:end]
+	// Get the start and end position of the page data area slice: m.Data[start:end]
 	//
-	// 注意: go 的切片是左闭右开的 [start,end)，假设全局数据区无限长度
-	//      的情况下，页面数据区的 end 应当始终是实际页面长度+1，也就是说
-	//      end 最大值在有限长度下应该等于 len(m.Data)
+	// note: the slice is closed left and opened right: `[start,end)`
+	//       assuming that the global data area has unlimited length,
+	//       end should always be the actual page `length+1`,
+	//       the maximum value of end should be equal to `len(m.Data)`
+	//       under limited length
 	pageStart, pageEnd := m.pageIndexInfo()
-	// 数据区起始位置没有达到最小值时分为两种情况
+	// there are two cases when `start` does not reach the minimum value
 	if pageStart > 0 {
-		// 数据区起始位置距离最小值至少有一页长度剩余
+		// `start` is at least one page length from the minimum
 		if pageStart >= m.PerPage {
-			// 后退一页
+			// slide the page data area forward one page
 			m.pageData = m.Data[pageStart-m.PerPage : pageEnd-m.PerPage]
-			// 直接将全局实时索引后退一个页面长度
+			// Global real-time index reduces the length of one page
 			m.index -= m.PerPage
-		} else {
-			// 如果数据区起始位置距离最小值小于一页
-			// 直接后退到最小值
+		} else { // `start` to the minimum value less than one page length
+			// slide the page data area directly to the start
 			m.pageData = m.Data[:m.PerPage]
-			// 由于已经滑动到了最小值，所以: 滑动距离 = 滑动前位置 - 最小值0
-			// 此时将全局实时索引也同步滑动距离即可
+			// `sliding distance` = `position before sliding` - `minimum value(0)`
+			// the global real-time index should also synchronize the same sliding distance
 			m.index -= pageStart - 0
 		}
 	}
 }
 
-// Forward 触发快速跳转动作，如果按键不合法则维持原状
+// Forward triggers a fast jump action, if the pageIndex
+// is invalid, keep it as it is
 func (m *Model) Forward(pageIndex string) {
-	// 输入层保证数据准确性，直接忽略 err
+	// the caller guarantees that pageIndex is an integer, and err is not processed here
 	idx, _ := strconv.Atoi(pageIndex)
 	idx--
 
-	// 目标索引位置已经超出页面最大索引，直接忽略
+	// pageIndex has exceeded the maximum index of the page, ignore
 	if idx > m.pageMaxIndex {
 		return
 	}
 
-	// 计算移动到目标长度
+	// calculate the distance moved to pageIndex
 	l := idx - m.pageIndex
-	// 全局索引移动
+	// update the global real time index
 	m.index += l
-	// 页面索引移动
+	// update the page real time index
 	m.pageIndex = idx
 
 }
 
-// initData 负责初始化数据模型，初始化时会设置默认值以及修复错误的参数设置
+// initData initialize the data model, set the default value and
+// fix the wrong parameter settings during initialization
 func (m *Model) initData() {
 	if m.PerPage > len(m.Data) || m.PerPage < 1 {
 		m.PerPage = len(m.Data)
@@ -371,30 +398,34 @@ func (m *Model) initData() {
 	m.init = true
 }
 
-// pageIndexInfo 返回页面数据区对应全局数据区切片的起始、终止位置
+// pageIndexInfo return the start and end positions of the slice of the
+// page data area corresponding to the global data area
 func (m *Model) pageIndexInfo() (start, end int) {
-	// 全局实时索引 - 全局页面实时索引 = 数据区起始索引
+	// `Global real-time index` - `page real-time index` = `start index of page data area`
 	start = m.index - m.pageIndex
-	// 数据区起始位置 + 单页大小 = 数据区终止索引
+	// `Page data area start index` + `single page size` = `page data area end index`
 	end = start + m.PerPage
 	return
 }
 
-// DefaultHeaderFuncWithAppend 返回默认 HeaderFunc，并将给定字符串附加到默认头部下一行
+// DefaultHeaderFuncWithAppend return the default HeaderFunc and append
+// the given string to the next line of the default header
 func DefaultHeaderFuncWithAppend(append string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return DefaultHeader + "\n" + append
 	}
 }
 
-// DefaultSelectedFuncWithIndex 返回默认 SelectedFunc，并增加给定格式的序号前缀
+// DefaultSelectedFuncWithIndex return the default SelectedFunc and adds
+// the serial number prefix of the given format
 func DefaultSelectedFuncWithIndex(indexFormat string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj)
 	}
 }
 
-// DefaultUnSelectedFuncWithIndex 返回默认 UnSelectedFunc，并增加给定格式的序号前缀
+// DefaultUnSelectedFuncWithIndex return the default UnSelectedFunc and
+// adds the serial number prefix of the given format
 func DefaultUnSelectedFuncWithIndex(indexFormat string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj)
