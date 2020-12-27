@@ -26,18 +26,18 @@ const (
 // Model is a data container used to store TUI status information,
 // the ui rendering success style is as follows:
 //
-// Use the arrow keys to navigate: ↓ ↑ → ←
-// Select Commit Type:
+//	Use the arrow keys to navigate: ↓ ↑ → ←
+// 	Select Commit Type:
 //
-// » [1] feat (Introducing new features)
-//    2. fix (Bug fix)
-//    3. docs (Writing docs)
-//    4. style (Improving structure/format of the code)
-//    5. refactor (Refactoring code)
+// 	» [1] feat (Introducing new features)
+//	   2. fix (Bug fix)
+//	   3. docs (Writing docs)
+//	   4. style (Improving structure/format of the code)
+//	   5. refactor (Refactoring code)
 //
-// --------- Commit Type ----------
-// Type: feat
-// Description: 新功能(Introducing new features)
+//	--------- Commit Type ----------
+//	Type: feat
+//	Description: 新功能(Introducing new features)
 type Model struct {
 	// HeaderFunc Header rendering function
 	HeaderFunc func(m Model, obj interface{}, gdIndex int) string
@@ -102,28 +102,28 @@ func (m Model) View() string {
 		// consider three cases when calculating globalDynamicIndex:
 		//
 		// first page: pageIndex(real time page index)、index(global real time index) keep the two consistent
-		//   1. feat (Introducing new features)
-		//   2. fix (Bug fix)
-		//   3. docs (Writing docs)
-		//   4. style (Improving structure/format of the code)
-		//   5. refactor (Refactoring code)
-		//» [6] test (When adding missing tests)
+		//	  1. feat (Introducing new features)
+		//	  2. fix (Bug fix)
+		//	  3. docs (Writing docs)
+		//	  4. style (Improving structure/format of the code)
+		//	  5. refactor (Refactoring code)
+		//	» [6] test (When adding missing tests)
 		//
 		// slide down to page: pageIndex fixed to maximum, index increasing with sliding
-		//   2. fix (Bug fix)
-		//   3. docs (Writing docs)
-		//   4. style (Improving structure/format of the code)
-		//   5. refactor (Refactoring code)
-		//   6. test (When adding missing tests)
-		//» [7] chore (Changing CI/CD)
+		//	  2. fix (Bug fix)
+		//	  3. docs (Writing docs)
+		//	  4. style (Improving structure/format of the code)
+		//	  5. refactor (Refactoring code)
+		//	  6. test (When adding missing tests)
+		//	» [7] chore (Changing CI/CD)
 		//
 		// swipe up to page: pageIndex fixed to minimum, index decrease with sliding
-		//» [3] docs (Writing docs)
-		//   4. style (Improving structure/format of the code)
-		//   5. refactor (Refactoring code)
-		//   6. test (When adding missing tests)
-		//   7. chore (Changing CI/CD)
-		//   8. perf (Improving performance)
+		//	» [3] docs (Writing docs)
+		//	  4. style (Improving structure/format of the code)
+		//	  5. refactor (Refactoring code)
+		//	  6. test (When adding missing tests)
+		//	  7. chore (Changing CI/CD)
+		//	  8. perf (Improving performance)
 		//
 		// in three cases, `m.index - m.pageIndex = n`, `n` is the distance between the global real-time
 		// index and the page real-time index. when traversing the page data area, think of the traversal
