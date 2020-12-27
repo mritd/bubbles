@@ -2,7 +2,7 @@
 
 bubbles is a terminal prompt library created based on [charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea). 
 Based on bubbletea, it can be more robust and easy to maintain. Now bubbles are
-used to replace promptx.Currently bubbles only contains two components: `selector` and `prompt`.
+used to replace [promptx](https://github.com/mritd/promptx). Currently bubbles only contains two components: `selector` and `prompt`.
 
 ### selector
 
