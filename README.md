@@ -23,3 +23,5 @@ and standard terminal shortcut keys (such as `ctrl+a`, `ctrl+e`), password input
 The `progressbar` is a terminal progress bar library. The terminal `progressbar` library provides a terminal
 progress bar with a function. After each function is executed successfully, the progress bar advances 
 a certain distance. If the function returns an error message, the progress bar is terminated.
+
+![progressbar.gif](resources/progressbar.gif)
