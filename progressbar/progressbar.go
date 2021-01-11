@@ -27,32 +27,37 @@ var (
 type ProgressFunc func() (string, error)
 
 type Model struct {
-	Width      int
-	Stages     []ProgressFunc
-	stageIndex int
-	message    string
-	err        error
-	progress   float64
-	loaded     bool
-	init       bool
+	Width       int
+	Stages      []ProgressFunc
+	InitMessage string
+	stageIndex  int
+	message     string
+	err         error
+	progress    float64
+	loaded      bool
+	init        bool
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	return func() tea.Msg {
+		return m.Stages[m.stageIndex]
+	}
 }
 
 func (m Model) View() string {
-	prompt := indent.String("\n"+m.message, 2)
+	prompt := indent.String("\n"+makeInfo(m.message), 2)
+	if m.err != nil {
+		prompt = indent.String("\n"+makeError(m.err.Error()), 2)
+	}
 	bar := indent.String("\n"+progressbar(m.Width, m.progress)+"%"+"\n\n", 2)
 	return prompt + bar
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.init {
 		m.initData()
-		return m, func() tea.Msg {
-			return m.Stages[m.stageIndex]
-		}
+		m.message = makeInfo(m.InitMessage)
+		return m, nil
 	}
 
 	// Make sure these keys always quit
@@ -65,10 +70,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if pf, ok := msg.(ProgressFunc); ok {
 		m.message, m.err = pf()
-		m.stageIndex++
+		if m.err != nil {
+			return m, tea.Quit
+		}
+		if m.stageIndex < len(m.Stages)-1 {
+			m.stageIndex++
+		}
 		if !m.loaded {
 			m.progress += float64(1) / float64(len(m.Stages))
-			if m.progress >= 1+float64(1)/float64(len(m.Stages)) {
+			if m.progress > 1 {
 				m.progress = 1
 				m.loaded = true
 				return m, tea.Quit
@@ -77,7 +87,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, func() tea.Msg {
-		return m.Stages[m.stageIndex-1]
+		return m.Stages[m.stageIndex]
 	}
 }
 
@@ -87,6 +97,14 @@ func (m *Model) initData() {
 		m.Width = 35
 	}
 	m.init = true
+}
+
+func (m *Model) Error() error {
+	return m.err
+}
+
+func (m *Model) Index() int {
+	return m.stageIndex
 }
 
 func progressbar(width int, percent float64) string {
