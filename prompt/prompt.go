@@ -118,6 +118,24 @@ func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
+// View reads the data state of the data model for rendering
+func (m Model) View() string {
+	var prefix, prompt, errMsg string
+	if m.err != nil {
+		prefix = common.FontColor(m.ValidateErrPrefix, defaultValidateErrColor)
+		prompt = prefix + " " + m.input.View()
+		if m.showErr {
+			errMsg = common.FontColor(fmt.Sprintf("%s ERROR: %s\n", m.ValidateErrPrefix, m.err.Error()), defaultValidateErrColor)
+			return fmt.Sprintf("%s\n%s\n", prompt, errMsg)
+		}
+	} else {
+		prefix = common.FontColor(m.ValidateOkPrefix, defaultValidateOkColor)
+		prompt = prefix + " " + m.input.View()
+	}
+
+	return prompt + "\n"
+}
+
 // Update method responds to various events and modifies the data model
 // according to the corresponding events
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -158,24 +176,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.err = m.ValidateFunc(m.input.Value())
 
 	return m, cmd
-}
-
-// View reads the data state of the data model for rendering
-func (m Model) View() string {
-	var prefix, prompt, errMsg string
-	if m.err != nil {
-		prefix = common.FontColor(m.ValidateErrPrefix, defaultValidateErrColor)
-		prompt = prefix + " " + m.input.View()
-		if m.showErr {
-			errMsg = common.FontColor(fmt.Sprintf("%s ERROR: %s\n", m.ValidateErrPrefix, m.err.Error()), defaultValidateErrColor)
-			return fmt.Sprintf("%s\n%s\n", prompt, errMsg)
-		}
-	} else {
-		prefix = common.FontColor(m.ValidateOkPrefix, defaultValidateOkColor)
-		prompt = prefix + " " + m.input.View()
-	}
-
-	return prompt + "\n"
 }
 
 func (m *Model) Value() string {
