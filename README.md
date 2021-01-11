@@ -2,7 +2,7 @@
 
 bubbles is a terminal prompt library created based on [charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea). 
 Based on bubbletea, it can be more robust and easy to maintain. Now bubbles are
-used to replace [promptx](https://github.com/mritd/promptx). Currently bubbles only contains two components: `selector` and `prompt`.
+used to replace [promptx](https://github.com/mritd/promptx). 
 
 ### selector
 
@@ -17,3 +17,11 @@ The `prompt` is a terminal input prompt library. The `prompt` library provides C
 and standard terminal shortcut keys (such as `ctrl+a`, `ctrl+e`), password input echo and other functions.
 
 ![prompt.gif](resources/prompt.gif)
+
+### progressbar
+
+The `progressbar` is a terminal progress bar library. The terminal `progressbar` library provides a terminal
+progress bar with a function. After each function is executed successfully, the progress bar advances 
+a certain distance. If the function returns an error message, the progress bar is terminated.
+
+![progressbar.gif](resources/progressbar.gif)
