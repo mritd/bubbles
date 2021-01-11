@@ -24,8 +24,10 @@ var (
 	progressEmpty = subtle(progressEmptyChar)
 )
 
+// ProgressFunc is a simple function, the progress bar will step a certain distance after each execution
 type ProgressFunc func() (string, error)
 
+// Model is a data container used to store TUI status information.
 type Model struct {
 	Width       int
 	Stages      []ProgressFunc
@@ -38,12 +40,19 @@ type Model struct {
 	init        bool
 }
 
+// Init performs some io initialization actions, The current Init returns the first ProgressFunc
+// to trigger the program to run.
 func (m Model) Init() tea.Cmd {
 	return func() tea.Msg {
-		return m.Stages[m.stageIndex]
+		if len(m.Stages) > 0 {
+			return m.Stages[m.stageIndex]
+		} else {
+			return nil
+		}
 	}
 }
 
+// View reads the data state of the data model for rendering
 func (m Model) View() string {
 	prompt := indent.String("\n"+makeInfo(m.message), 2)
 	if m.err != nil {
@@ -53,6 +62,8 @@ func (m Model) View() string {
 	return prompt + bar
 }
 
+// Update method responds to various events and modifies the data model
+// according to the corresponding events
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !m.init {
 		m.initData()
@@ -77,7 +88,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.stageIndex++
 		}
 		if !m.loaded {
+			// The progress bar steps a certain distance after each successful execution
 			m.progress += float64(1) / float64(len(m.Stages))
+			// If all ProgressFunc has been executed, exit the TUI
 			if m.progress > 1 {
 				m.progress = 1
 				m.loaded = true
@@ -86,27 +99,33 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	// Return to the next ProgressFunc, trigger the traversal
 	return m, func() tea.Msg {
 		return m.Stages[m.stageIndex]
 	}
 }
 
+// initData initialize the data model, set the default value and
+// fix the wrong parameter settings during initialization
 func (m *Model) initData() {
 	m.stageIndex = 0
 	if m.Width == 0 {
-		m.Width = 35
+		m.Width = 40
 	}
 	m.init = true
 }
 
+// Error returns the error generated during the execution of ProgressFunc
 func (m *Model) Error() error {
 	return m.err
 }
 
+// Index returns the index of the ProgressFunc currently executed
 func (m *Model) Index() int {
 	return m.stageIndex
 }
 
+// progressbar is responsible for rendering the progress bar UI
 func progressbar(width int, percent float64) string {
 	w := float64(width)
 
