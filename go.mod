@@ -11,4 +11,4 @@ require (
 	github.com/muesli/termenv v0.7.4
 )
 
-replace github.com/charmbracelet/bubbletea v0.12.2 => github.com/mritd/bubbletea v0.12.3-0.20210111093436-592f2d4bf017
+replace github.com/charmbracelet/bubbletea v0.12.2 => github.com/mritd/bubbletea v0.12.3-0.20210112015836-b36bfa653250
