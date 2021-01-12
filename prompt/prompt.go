@@ -118,10 +118,6 @@ func (m Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m Model) String() string {
-	return m.Prompt
-}
-
 // View reads the data state of the data model for rendering
 func (m Model) View() string {
 	var prefix, prompt, errMsg string
@@ -182,6 +178,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// Value return the input string
 func (m *Model) Value() string {
 	return m.input.Value()
 }
