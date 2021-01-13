@@ -157,7 +157,7 @@ func (m Model) View() string {
 		footer = m.FooterFunc(m, obj, globalDynamicIndex)
 	}
 
-	return fmt.Sprintf("%s\n\n%s\n%s\n", header, data, footer)
+	return fmt.Sprintf("%s\n\n%s\n%s", header, data, footer)
 }
 
 // Update method responds to various events and modifies the data model
