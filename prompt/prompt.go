@@ -71,10 +71,11 @@ type Model struct {
 	// EchoMode sets the input behavior of the text input field.
 	EchoMode EchoMode
 
-	init    bool
-	showErr bool
-	input   textinput.Model
-	err     error
+	init     bool
+	canceled bool
+	showErr  bool
+	input    textinput.Model
+	err      error
 }
 
 // initData initialize the data model, set the default value and
@@ -148,8 +149,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC:
-			return m, tea.Quit
-		case tea.KeyEsc:
+			m.canceled = true
 			return m, tea.Quit
 		case tea.KeyEnter:
 			// When press the Enter button, if there is a verification error,
@@ -181,6 +181,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // Value return the input string
 func (m *Model) Value() string {
 	return m.input.Value()
+}
+
+// Canceled determine whether the operation is cancelled
+func (m *Model) Canceled() bool {
+	return m.canceled
 }
 
 // VFDoNothing is a verification function that does nothing
