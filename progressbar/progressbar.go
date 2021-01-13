@@ -38,6 +38,7 @@ type Model struct {
 	progress    float64
 	loaded      bool
 	init        bool
+	canceled    bool
 }
 
 // Init performs some io initialization actions, The current Init returns the first ProgressFunc
@@ -62,6 +63,11 @@ func (m Model) View() string {
 	return prompt + bar
 }
 
+// Canceled determine whether the operation is cancelled
+func (m *Model) Canceled() bool {
+	return m.canceled
+}
+
 // Update method responds to various events and modifies the data model
 // according to the corresponding events
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -75,6 +81,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		k := msg.String()
 		if k == "q" || k == "esc" || k == "ctrl+c" {
+			m.canceled = true
 			return m, tea.Quit
 		}
 	}
