@@ -82,16 +82,8 @@ type Model struct {
 // fix the wrong parameter settings during initialization
 func (m *Model) initData() {
 	m.input = textinput.NewModel()
-	if m.CharLimit == 0 {
-		m.CharLimit, m.input.CharLimit = 30, 30
-	} else {
-		m.input.CharLimit = m.CharLimit
-	}
-	if m.Width == 0 {
-		m.Width, m.input.Width = 35, 35
-	} else {
-		m.input.Width = m.Width
-	}
+	m.input.CharLimit = m.CharLimit
+	m.input.Width = m.Width
 	if m.PromptColor == "" {
 		m.PromptColor = defaultPromptOkColor
 	}
