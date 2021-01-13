@@ -13,16 +13,17 @@ import (
 )
 
 const (
-	DefaultHeader          = "Use the arrow keys to navigate: ↓ ↑ → ←"
-	DefaultFooter          = "Current page number details: %d/%d"
-	DefaultCursor          = "»"
-	DefaultFinished        = "Current selected: %s\n"
-	defaultHeaderColor     = "15"
-	defaultFooterColor     = "15"
-	defaultCursorColor     = "2"
-	defaultFinishedColor   = "2"
-	defaultSelectedColor   = "14"
-	defaultUnSelectedColor = "8"
+	DefaultHeader   = "Use the arrow keys to navigate: ↓ ↑ → ←"
+	DefaultFooter   = "Current page number details: %d/%d"
+	DefaultCursor   = "»"
+	DefaultFinished = "Current selected: %s\n"
+
+	ColorHeader     = "15"
+	ColorFooter     = "15"
+	ColorCursor     = "2"
+	ColorFinished   = "2"
+	ColorSelected   = "14"
+	ColorUnSelected = "8"
 )
 
 // Model is a data container used to store TUI status information,
@@ -43,28 +44,18 @@ const (
 type Model struct {
 	// HeaderFunc Header rendering function
 	HeaderFunc func(m Model, obj interface{}, gdIndex int) string
-	// HeaderColor header rendering color
-	HeaderColor string
 	// Cursor cursor rendering style
 	Cursor string
 	// CursorColor cursor rendering color
 	CursorColor string
 	// SelectedFunc selected data rendering function
 	SelectedFunc func(m Model, obj interface{}, gdIndex int) string
-	// SelectedColor selected data rendering color
-	SelectedColor string
 	// UnSelectedFunc unselected data rendering function
 	UnSelectedFunc func(m Model, obj interface{}, gdIndex int) string
-	// UnSelectedColor unselected data rendering color
-	UnSelectedColor string
 	// FooterFunc footer rendering function
 	FooterFunc func(m Model, obj interface{}, gdIndex int) string
-	// FooterColor footer rendering color
-	FooterColor string
 	// FinishedFunc finished rendering function
 	FinishedFunc func(selected interface{}) string
-	// FinishedColor finished rendering color
-	FinishedColor string
 	// PerPage data count per page
 	PerPage int
 	// Data the data set to be rendered
@@ -96,7 +87,7 @@ func (m Model) Init() tea.Cmd {
 // View reads the data state of the data model for rendering
 func (m Model) View() string {
 	if m.finished {
-		return common.FontColor(m.FinishedFunc(m.Selected()), m.FinishedColor)
+		return m.FinishedFunc(m.Selected())
 	}
 
 	// the cursor only needs to be displayed correctly
@@ -155,15 +146,15 @@ func (m Model) View() string {
 			// globalDynamicIndex: The global data index corresponding to the current traverse data; pass it
 			//                     to the user-defined rendering function to help users achieve rendering
 			//                     actions such as adding serial numbers
-			dataLine = common.FontColor(m.SelectedFunc(m, obj, globalDynamicIndex), m.SelectedColor) + "\n"
+			dataLine = m.SelectedFunc(m, obj, globalDynamicIndex) + "\n"
 		} else {
 			// the cursor is not displayed on the unselected line, and the selected line is aligned with the blank character
 			cursorPrefix = common.GenSpaces(runewidth.StringWidth(m.Cursor) + 1)
-			dataLine = common.FontColor(m.UnSelectedFunc(m, obj, globalDynamicIndex), m.UnSelectedColor) + "\n"
+			dataLine = m.UnSelectedFunc(m, obj, globalDynamicIndex) + "\n"
 		}
 		data += cursorPrefix + dataLine
-		header = common.FontColor(m.HeaderFunc(m, obj, globalDynamicIndex), m.HeaderColor)
-		footer = common.FontColor(m.FooterFunc(m, obj, globalDynamicIndex), m.FooterColor)
+		header = m.HeaderFunc(m, obj, globalDynamicIndex)
+		footer = m.FooterFunc(m, obj, globalDynamicIndex)
 	}
 
 	return fmt.Sprintf("%s\n\n%s\n%s\n", header, data, footer)
@@ -379,40 +370,35 @@ func (m *Model) initData() {
 	m.index = 0
 	m.maxIndex = len(m.Data) - 1
 	if m.HeaderFunc == nil {
-		m.HeaderFunc = func(_ Model, _ interface{}, _ int) string { return DefaultHeader }
-	}
-	if m.HeaderColor == "" {
-		m.HeaderColor = defaultHeaderColor
+		m.HeaderFunc = func(_ Model, _ interface{}, _ int) string {
+			return common.FontColor(DefaultHeader, ColorHeader)
+		}
 	}
 	if m.Cursor == "" {
 		m.Cursor = DefaultCursor
 	}
 	if m.CursorColor == "" {
-		m.CursorColor = defaultCursorColor
+		m.CursorColor = ColorCursor
 	}
 	if m.SelectedFunc == nil {
-		m.SelectedFunc = func(m Model, obj interface{}, gdIndex int) string { return fmt.Sprint(obj) }
-	}
-	if m.SelectedColor == "" {
-		m.SelectedColor = defaultSelectedColor
+		m.SelectedFunc = func(m Model, obj interface{}, gdIndex int) string {
+			return common.FontColor(fmt.Sprint(obj), ColorSelected)
+		}
 	}
 	if m.UnSelectedFunc == nil {
-		m.UnSelectedFunc = func(m Model, obj interface{}, gdIndex int) string { return fmt.Sprint(obj) }
-	}
-	if m.UnSelectedColor == "" {
-		m.UnSelectedColor = defaultUnSelectedColor
+		m.UnSelectedFunc = func(m Model, obj interface{}, gdIndex int) string {
+			return common.FontColor(fmt.Sprint(obj), ColorUnSelected)
+		}
 	}
 	if m.FooterFunc == nil {
-		m.FooterFunc = func(_ Model, _ interface{}, _ int) string { return DefaultFooter }
-	}
-	if m.FooterColor == "" {
-		m.FooterColor = defaultFooterColor
-	}
-	if m.FinishedColor == "" {
-		m.FinishedColor = defaultFinishedColor
+		m.FooterFunc = func(_ Model, _ interface{}, _ int) string {
+			return common.FontColor(DefaultFooter, ColorFooter)
+		}
 	}
 	if m.FinishedFunc == nil {
-		m.FinishedFunc = func(s interface{}) string { return fmt.Sprintf(DefaultFinished, s) }
+		m.FinishedFunc = func(s interface{}) string {
+			return common.FontColor(fmt.Sprintf(DefaultFinished, s), ColorFinished)
+		}
 	}
 	m.init = true
 }
@@ -431,7 +417,7 @@ func (m *Model) pageIndexInfo() (start, end int) {
 // the given string to the next line of the default header
 func DefaultHeaderFuncWithAppend(append string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
-		return DefaultHeader + "\n" + append
+		return common.FontColor(DefaultHeader+"\n"+append, ColorHeader)
 	}
 }
 
@@ -439,7 +425,7 @@ func DefaultHeaderFuncWithAppend(append string) func(m Model, obj interface{}, g
 // the serial number prefix of the given format
 func DefaultSelectedFuncWithIndex(indexFormat string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
-		return fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj)
+		return common.FontColor(fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj), ColorSelected)
 	}
 }
 
@@ -447,6 +433,6 @@ func DefaultSelectedFuncWithIndex(indexFormat string) func(m Model, obj interfac
 // adds the serial number prefix of the given format
 func DefaultUnSelectedFuncWithIndex(indexFormat string) func(m Model, obj interface{}, gdIndex int) string {
 	return func(m Model, obj interface{}, gdIndex int) string {
-		return fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj)
+		return common.FontColor(fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj), ColorUnSelected)
 	}
 }

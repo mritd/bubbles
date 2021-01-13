@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/mritd/bubbles/common"
+
 	"github.com/mritd/bubbles/selector"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -47,12 +49,12 @@ func main() {
 		// [1] feat (Introducing new features)
 		SelectedFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
 			t := obj.(TypeMessage)
-			return fmt.Sprintf("[%d] %s (%s)", gdIndex+1, t.Type, t.ENDescription)
+			return common.FontColor(fmt.Sprintf("[%d] %s (%s)", gdIndex+1, t.Type, t.ENDescription), selector.ColorSelected)
 		},
 		// 2. fix (Bug fix)
 		UnSelectedFunc: func(m selector.Model, obj interface{}, gdIndex int) string {
 			t := obj.(TypeMessage)
-			return fmt.Sprintf(" %d. %s (%s)", gdIndex+1, t.Type, t.ENDescription)
+			return common.FontColor(fmt.Sprintf(" %d. %s (%s)", gdIndex+1, t.Type, t.ENDescription), selector.ColorUnSelected)
 		},
 		// --------- Commit Type ----------
 		// Type: feat
@@ -62,7 +64,10 @@ func main() {
 			footerTpl := `--------- Commit Type ----------
 Type: %s
 Description: %s(%s)`
-			return fmt.Sprintf(footerTpl, t.Type, t.ZHDescription, t.ENDescription)
+			return common.FontColor(fmt.Sprintf(footerTpl, t.Type, t.ZHDescription, t.ENDescription), selector.ColorFooter)
+		},
+		FinishedFunc: func(s interface{}) string {
+			return common.FontColor("Current selected: ", selector.ColorFinished) + string(s.(TypeMessage).Type) + "\n"
 		},
 	}
 
