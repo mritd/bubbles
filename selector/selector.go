@@ -16,9 +16,11 @@ const (
 	DefaultHeader          = "Use the arrow keys to navigate: ↓ ↑ → ←"
 	DefaultFooter          = "Current page number details: %d/%d"
 	DefaultCursor          = "»"
+	DefaultFinished        = "Current selected: %s\n"
 	defaultHeaderColor     = "15"
 	defaultFooterColor     = "15"
 	defaultCursorColor     = "2"
+	defaultFinishedColor   = "2"
 	defaultSelectedColor   = "14"
 	defaultUnSelectedColor = "8"
 )
@@ -59,6 +61,10 @@ type Model struct {
 	FooterFunc func(m Model, obj interface{}, gdIndex int) string
 	// FooterColor footer rendering color
 	FooterColor string
+	// FinishedFunc finished rendering function
+	FinishedFunc func(selected interface{}) string
+	// FinishedColor finished rendering color
+	FinishedColor string
 	// PerPage data count per page
 	PerPage int
 	// Data the data set to be rendered
@@ -68,6 +74,8 @@ type Model struct {
 	init bool
 	// canceled indicates whether the operation was cancelled
 	canceled bool
+	// finished indicates whether it has exited
+	finished bool
 	// pageData data set rendered in real time on the current page
 	pageData []interface{}
 	// index global real time index
@@ -87,6 +95,10 @@ func (m Model) Init() tea.Cmd {
 
 // View reads the data state of the data model for rendering
 func (m Model) View() string {
+	if m.finished {
+		return common.FontColor(m.FinishedFunc(m.Selected()), m.FinishedColor)
+	}
+
 	// the cursor only needs to be displayed correctly
 	cursor := common.FontColor(m.Cursor, m.CursorColor)
 	// template functions may be displayed dynamically at the head, tail and data area
@@ -170,6 +182,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.canceled = true
 			return m, tea.Quit
 		case "enter":
+			m.finished = true
 			return m, tea.Quit
 		case "down":
 			m.MoveDown()
@@ -394,6 +407,12 @@ func (m *Model) initData() {
 	}
 	if m.FooterColor == "" {
 		m.FooterColor = defaultFooterColor
+	}
+	if m.FinishedColor == "" {
+		m.FinishedColor = defaultFinishedColor
+	}
+	if m.FinishedFunc == nil {
+		m.FinishedFunc = func(s interface{}) string { return fmt.Sprintf(DefaultFinished, s) }
 	}
 	m.init = true
 }
