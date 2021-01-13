@@ -15,9 +15,10 @@ const (
 	DefaultPrompt            = "Please Input: "
 	DefaultValidateOkPrefix  = "✔"
 	DefaultValidateErrPrefix = "✘"
-	defaultPromptOkColor     = "2"
-	defaultValidateOkColor   = "2"
-	defaultValidateErrColor  = "1"
+
+	ColorPrompt      = "2"
+	colorValidateOk  = "2"
+	colorValidateErr = "1"
 )
 
 // EchoMode sets the input behavior of the text input field.
@@ -55,9 +56,6 @@ type Model struct {
 	// the format(including spaces)
 	Prompt string
 
-	// PromptColor defines the color of the prompt prefix
-	PromptColor string
-
 	// ValidateFunc is a "real-time verification" function, which verifies
 	// whether the terminal input data is legal in real time
 	ValidateFunc func(string) error
@@ -73,6 +71,7 @@ type Model struct {
 
 	init     bool
 	canceled bool
+	finished bool
 	showErr  bool
 	input    textinput.Model
 	err      error
@@ -84,14 +83,10 @@ func (m *Model) initData() {
 	m.input = textinput.NewModel()
 	m.input.CharLimit = m.CharLimit
 	m.input.Width = m.Width
-	if m.PromptColor == "" {
-		m.PromptColor = defaultPromptOkColor
-	}
 	if m.Prompt == "" {
-		m.Prompt, m.input.Prompt = common.FontColor(DefaultPrompt, m.PromptColor), common.FontColor(DefaultPrompt, m.PromptColor)
-	} else {
-		m.input.Prompt = common.FontColor(m.Prompt, m.PromptColor)
+		m.Prompt = common.FontColor(DefaultPrompt, ColorPrompt)
 	}
+	m.input.Prompt = m.Prompt
 	if m.ValidateFunc == nil {
 		m.ValidateFunc = VFDoNothing
 	}
@@ -113,16 +108,26 @@ func (m Model) Init() tea.Cmd {
 
 // View reads the data state of the data model for rendering
 func (m Model) View() string {
+	if m.finished {
+		switch m.EchoMode {
+		case EchoNormal:
+			return common.FontColor(m.ValidateOkPrefix, colorValidateOk) + " " + m.Prompt + m.Value() + "\n"
+		case EchoNone:
+			return common.FontColor(m.ValidateOkPrefix, colorValidateOk) + " " + m.Prompt + "\n"
+		case EchoPassword:
+			return common.FontColor(m.ValidateOkPrefix, colorValidateOk) + " " + m.Prompt + common.GenMask(len([]rune(m.Value()))) + "\n"
+		}
+	}
 	var prefix, prompt, errMsg string
 	if m.err != nil {
-		prefix = common.FontColor(m.ValidateErrPrefix, defaultValidateErrColor)
+		prefix = common.FontColor(m.ValidateErrPrefix, colorValidateErr)
 		prompt = prefix + " " + m.input.View()
 		if m.showErr {
-			errMsg = common.FontColor(fmt.Sprintf("%s ERROR: %s\n", m.ValidateErrPrefix, m.err.Error()), defaultValidateErrColor)
+			errMsg = common.FontColor(fmt.Sprintf("%s ERROR: %s\n", m.ValidateErrPrefix, m.err.Error()), colorValidateErr)
 			return fmt.Sprintf("%s\n%s\n", prompt, errMsg)
 		}
 	} else {
-		prefix = common.FontColor(m.ValidateOkPrefix, defaultValidateOkColor)
+		prefix = common.FontColor(m.ValidateOkPrefix, colorValidateOk)
 		prompt = prefix + " " + m.input.View()
 	}
 
@@ -148,6 +153,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// an error message is displayed.
 			m.showErr = true
 			if m.err == nil {
+				m.finished = true
 				return m, tea.Quit
 			}
 		case tea.KeyRunes:

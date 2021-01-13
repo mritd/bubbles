@@ -6,16 +6,26 @@ import (
 
 var term = termenv.ColorProfile()
 
-// FontColor 对给定的字符串设置颜色并加粗字体
+// FontColor sets the color of the given string and bolds the font
 func FontColor(str, color string) string {
 	return termenv.String(str).Foreground(term.Color(color)).Bold().String()
 }
 
-// GenSpaces 生成给定长度的空格
+// GenSpaces generate a space string of specified length
 func GenSpaces(l int) string {
-	var s string
+	return GenStr(l, " ")
+}
+
+// GenMask generate a mask string of the specified length
+func GenMask(l int) string {
+	return GenStr(l, "*")
+}
+
+// GenStr generate a string of the specified length, the string is composed of the given characters
+func GenStr(l int, s string) string {
+	var ss string
 	for i := 0; i < l; i++ {
-		s += " "
+		ss += s
 	}
-	return s
+	return ss
 }
