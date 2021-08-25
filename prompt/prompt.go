@@ -3,9 +3,8 @@ package prompt
 import (
 	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/mritd/bubbles/common"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -73,20 +72,14 @@ type Model struct {
 	canceled bool
 	finished bool
 	showErr  bool
-	input    textinput.Model
 	err      error
+
+	input textinput.Model
 }
 
 // initData initialize the data model, set the default value and
 // fix the wrong parameter settings during initialization
 func (m *Model) initData() {
-	m.input = textinput.NewModel()
-	m.input.CharLimit = m.CharLimit
-	m.input.Width = m.Width
-	if m.Prompt == "" {
-		m.Prompt = common.FontColor(DefaultPrompt, ColorPrompt)
-	}
-	m.input.Prompt = m.Prompt
 	if m.ValidateFunc == nil {
 		m.ValidateFunc = VFDoNothing
 	}
@@ -96,14 +89,19 @@ func (m *Model) initData() {
 	if m.ValidateErrPrefix == "" {
 		m.ValidateErrPrefix = DefaultValidateErrPrefix
 	}
-	m.input.EchoMode = textinput.EchoMode(m.EchoMode)
-	m.input.Focus()
-	m.init = true
-}
+	if m.Prompt == "" {
+		m.Prompt = common.FontColor(DefaultPrompt, ColorPrompt)
+	}
 
-// Init performs some io initialization actions
-func (m Model) Init() tea.Cmd {
-	return textinput.Blink
+	in := textinput.NewModel()
+	in.CharLimit = m.CharLimit
+	in.Width = m.Width
+	in.Prompt = m.Prompt
+	in.EchoMode = textinput.EchoMode(m.EchoMode)
+	in.Focus()
+
+	m.input = in
+	m.init = true
 }
 
 // View reads the data state of the data model for rendering
@@ -118,17 +116,16 @@ func (m Model) View() string {
 			return common.FontColor(m.ValidateOkPrefix, colorValidateOk) + " " + m.Prompt + common.GenMask(len([]rune(m.Value()))) + "\n"
 		}
 	}
-	var prefix, prompt, errMsg string
+
+	var prompt, errMsg string
 	if m.err != nil {
-		prefix = common.FontColor(m.ValidateErrPrefix, colorValidateErr)
-		prompt = prefix + " " + m.input.View()
+		prompt = common.FontColor(m.ValidateErrPrefix, colorValidateErr) + " " + m.input.View()
 		if m.showErr {
 			errMsg = common.FontColor(fmt.Sprintf("%s ERROR: %s\n", m.ValidateErrPrefix, m.err.Error()), colorValidateErr)
 			return fmt.Sprintf("%s\n%s\n", prompt, errMsg)
 		}
 	} else {
-		prefix = common.FontColor(m.ValidateOkPrefix, colorValidateOk)
-		prompt = prefix + " " + m.input.View()
+		prompt = common.FontColor(m.ValidateOkPrefix, colorValidateOk) + " " + m.input.View()
 	}
 
 	return prompt + "\n"
@@ -136,53 +133,60 @@ func (m Model) View() string {
 
 // Update method responds to various events and modifies the data model
 // according to the corresponding events
-func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
+func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
 	if !m.init {
 		m.initData()
-		return m, cmd
+		return m, nil
 	}
+
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// We intercept some key events, because we need to handle it in the upper layer
 		switch msg.Type {
 		case tea.KeyCtrlC:
+			// Terminate the UI program when Ctrl+C is pressed
 			m.canceled = true
 			return m, tea.Quit
 		case tea.KeyEnter:
-			// When press the Enter button, if there is a verification error,
-			// an error message is displayed.
-			m.showErr = true
+			// If the real-time verification function does not return an error,
+			// then the input has been completed
 			if m.err == nil {
 				m.finished = true
-				return m, tea.Quit
+				return m, common.Done
 			}
+
+			// If there is a verification error, the error message should be display
+			m.showErr = true
 		case tea.KeyRunes:
 			// Hide verification failure message when entering content again
 			m.showErr = false
 			m.err = nil
 		}
 
+		// Call the underlying textinput to update the terminal display
+		m.input, cmd = m.input.Update(msg)
+		// Perform real-time verification function after each input
+		m.err = m.ValidateFunc(m.input.Value())
+
 	// We handle errors just like any other message
+	// Note: msg is error only when there is an unexpected error in the underlying textinput
 	case error:
 		m.err = msg
 		m.showErr = true
 		return m, nil
 	}
 
-	m.input, cmd = m.input.Update(msg)
-	// Perform real-time verification function after each input
-	m.err = m.ValidateFunc(m.input.Value())
-
 	return m, cmd
 }
 
 // Value return the input string
-func (m *Model) Value() string {
+func (m Model) Value() string {
 	return m.input.Value()
 }
 
 // Canceled determine whether the operation is cancelled
-func (m *Model) Canceled() bool {
+func (m Model) Canceled() bool {
 	return m.canceled
 }
 

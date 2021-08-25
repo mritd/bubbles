@@ -1,10 +1,11 @@
-// selector is a terminal single-selection list library. selector library provides the
+// Package selector is a terminal single-selection list library. selector library provides the
 // functions of page up and down and key movement, and supports custom rendering methods.
 package selector
 
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/mritd/bubbles/common"
 
@@ -77,11 +78,6 @@ type Model struct {
 	pageIndex int
 	// pageMaxIndex current page max index
 	pageMaxIndex int
-}
-
-// Init performs some io initialization actions
-func (m Model) Init() tea.Cmd {
-	return nil
 }
 
 // View reads the data state of the data model for rendering
@@ -162,67 +158,39 @@ func (m Model) View() string {
 
 // Update method responds to various events and modifies the data model
 // according to the corresponding events
-func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
 	if !m.init {
 		m.initData()
+		return m, nil
 	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch strings.ToLower(msg.String()) {
 		case "q", "ctrl+c":
 			m.canceled = true
 			return m, tea.Quit
 		case "enter":
 			m.finished = true
-			return m, tea.Quit
+			return m, common.Done
 		case "down":
-			m.MoveDown()
+			m.moveDown()
 		case "up":
-			m.MoveUp()
+			m.moveUp()
 		case "right", "pgdown", "l", "k":
-			m.NextPage()
+			m.nextPage()
 		case "left", "pgup", "h", "j":
-			m.PrePage()
+			m.prePage()
 		case "1", "2", "3", "4", "5", "6", "7", "8", "9":
-			m.Forward(msg.String())
+			m.forward(msg.String())
 		}
 	}
 	return m, nil
 }
 
-// Index return the global real time index
-func (m *Model) Index() int {
-	return m.index
-}
-
-// PageIndex return the real time index of the page
-func (m *Model) PageIndex() int {
-	return m.pageIndex
-}
-
-// PageData return the current page data area slice
-func (m *Model) PageData() []interface{} {
-	return m.pageData
-}
-
-// Selected return the currently selected data
-func (m *Model) Selected() interface{} {
-	return m.Data[m.index]
-}
-
-// PageSelected return the currently selected data(same as the Selected func)
-func (m *Model) PageSelected() interface{} {
-	return m.pageData[m.pageIndex]
-}
-
-// Canceled determine whether the operation is cancelled
-func (m *Model) Canceled() bool {
-	return m.canceled
-}
-
-// MoveDown executes the downward movement of the cursor,
+// moveDown executes the downward movement of the cursor,
 // while adjusting the internal index and refreshing the data area
-func (m *Model) MoveDown() {
+func (m *Model) moveDown() {
 	// the page index has not reached the maximum value, and the page
 	// data area does not need to be updated
 	if m.pageIndex < m.pageMaxIndex {
@@ -248,9 +216,9 @@ func (m *Model) MoveDown() {
 	}
 }
 
-// MoveUp performs an upward movement of the cursor,
+// moveUp performs an upward movement of the cursor,
 // while adjusting the internal index and refreshing the data area
-func (m *Model) MoveUp() {
+func (m *Model) moveUp() {
 	// the page index has not reached the minimum value, and the page
 	// data area does not need to be updated
 	if m.pageIndex > 0 {
@@ -276,9 +244,9 @@ func (m *Model) MoveUp() {
 	}
 }
 
-// NextPage triggers the page-down action, and does not change
+// nextPage triggers the page-down action, and does not change
 // the real-time page index(pageIndex)
-func (m *Model) NextPage() {
+func (m *Model) nextPage() {
 	// Get the start and end position of the page data area slice: m.Data[start:end]
 	//
 	// note: the slice is closed left and opened right: `[start,end)`
@@ -305,9 +273,9 @@ func (m *Model) NextPage() {
 	}
 }
 
-// PrePage triggers the page-up action, and does not change
+// prePage triggers the page-up action, and does not change
 // the real-time page index(pageIndex)
-func (m *Model) PrePage() {
+func (m *Model) prePage() {
 	// Get the start and end position of the page data area slice: m.Data[start:end]
 	//
 	// note: the slice is closed left and opened right: `[start,end)`
@@ -334,9 +302,9 @@ func (m *Model) PrePage() {
 	}
 }
 
-// Forward triggers a fast jump action, if the pageIndex
+// forward triggers a fast jump action, if the pageIndex
 // is invalid, keep it as it is
-func (m *Model) Forward(pageIndex string) {
+func (m *Model) forward(pageIndex string) {
 	// the caller guarantees that pageIndex is an integer, and err is not processed here
 	idx, _ := strconv.Atoi(pageIndex)
 	idx--
@@ -435,4 +403,34 @@ func DefaultUnSelectedFuncWithIndex(indexFormat string) func(m Model, obj interf
 	return func(m Model, obj interface{}, gdIndex int) string {
 		return common.FontColor(fmt.Sprintf(indexFormat+" %v", gdIndex+1, obj), ColorUnSelected)
 	}
+}
+
+// Index return the global real time index
+func (m Model) Index() int {
+	return m.index
+}
+
+// PageIndex return the real time index of the page
+func (m Model) PageIndex() int {
+	return m.pageIndex
+}
+
+// PageData return the current page data area slice
+func (m Model) PageData() []interface{} {
+	return m.pageData
+}
+
+// Selected return the currently selected data
+func (m Model) Selected() interface{} {
+	return m.Data[m.index]
+}
+
+//// PageSelected return the currently selected data(same as the Selected func)
+//func (m Model) PageSelected() interface{} {
+//	return m.pageData[m.pageIndex]
+//}
+
+// Canceled determine whether the operation is cancelled
+func (m Model) Canceled() bool {
+	return m.canceled
 }

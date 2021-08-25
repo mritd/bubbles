@@ -1,8 +1,11 @@
 package common
 
 import (
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/termenv"
 )
+
+const DONE = "DONE"
 
 var term = termenv.ColorProfile()
 
@@ -28,4 +31,8 @@ func GenStr(l int, s string) string {
 		ss += s
 	}
 	return ss
+}
+
+func Done() tea.Msg {
+	return DONE
 }
